@@ -30,7 +30,7 @@ export default function Dashboard() {
   async function getToken(roomName: string, participantName: string){
 
     try {
-      const res = await axios.post(`${BackendUrl}/api/getToken`, {roomName, participantId: participantName},{
+      const res = await axios.post(`${BackendUrl}/getToken`, {roomName, participantId: participantName},{
         headers: {
           "Content-Type": "application/json"
         }
