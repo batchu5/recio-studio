@@ -4,6 +4,7 @@ const DB_NAME = "recordingDB";
 const STORE_NAME = "chunks";
 const DB_VERSION = 1;
 let isUploading = 0;
+const BackenUrl = import.meta.env.VITE_BACKEND_URL;
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -122,7 +123,7 @@ async function uploadChunkToBackend(chunkData: any) {
 
     console.log("sending the data to the backend");
 
-    const res = await axios.post("http://localhost:3000/api/upload_chunk", formData  , {
+    const res = await axios.post(`${BackenUrl}/api/upload_chunk`, formData  , {
         headers: { "Content-Type": "multipart/form-data" },
     });
 
