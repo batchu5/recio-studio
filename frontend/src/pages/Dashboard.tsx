@@ -19,8 +19,10 @@ export default function Dashboard() {
   const sessionIdRef = useRef<string>("abc123"); 
   const BackendUrl = import.meta.env.VITE_BACKEND_URL;
 
+  const [recordingUrl, setRecordingUrl] = useState<string>("");
+
   const participantName = useRecoilValue(userIdAtom);
-  const isRecordingStarted = useState<boolean>(false);
+  const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
   const [roomName, setRoomName] = useState("Test Room");
 
   const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
@@ -100,6 +102,7 @@ export default function Dashboard() {
   } 
 
   function startRecording(videoTrack : VideoTrack | RemoteVideoTrack, audioTrack : AudioTrack | RemoteAudioTrack, participantName : string){
+        setIsRecordinStarted(true);
         const stream = new MediaStream();
         if(videoTrack){
             stream.addTrack(videoTrack.mediaStreamTrack);
@@ -123,6 +126,7 @@ export default function Dashboard() {
   }
 
   function stopRecording(recorder: MediaRecorder | null) {
+        setIsRecordinStarted(false);
         if (!recorder) return;
         if (recorder.state !== "inactive") {
             recorder.stop();
@@ -135,11 +139,12 @@ export default function Dashboard() {
     try {
         console.log(sessionIdRef.current);
         const sessionId = sessionIdRef.current;
-      const res = await axios.post(`${BackendUrl}/api/get_url`, {session_id :sessionId},{
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
+        const res = await axios.post(`${BackendUrl}/api/get_url`, {session_id :sessionId},{
+            headers: {
+            "Content-Type": "application/json"
+            }
+        })
+        setRecordingUrl(res.data.url);
       console.log(res.data);
     } catch (error) {
         console.log("error occured bhahu", error);
@@ -219,6 +224,7 @@ export default function Dashboard() {
                                     End Recording
                                 </button>
                                 )}
+                                url of the recording: {recordingUrl}
 
                                 <button onClick={getUrl}>Get URL</button>
                         </div>
