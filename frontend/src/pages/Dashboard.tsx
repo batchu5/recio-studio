@@ -20,7 +20,7 @@ export default function Dashboard() {
   const BackendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const participantName = useRecoilValue(userIdAtom);
-
+  const isRecordingStarted = useState<boolean>(false);
   const [roomName, setRoomName] = useState("Test Room");
 
   const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
@@ -73,8 +73,8 @@ export default function Dashboard() {
             videoTrack = track as RemoteVideoTrack;
             }
 
-            if (videoTrack || audioTrack) {
-            startRecording(videoTrack!, audioTrack!, participant.identity);
+            if (isRecordingStarted && (videoTrack || audioTrack)) {
+                startRecording(videoTrack!, audioTrack!, participant.identity);
             }
         }
     );
