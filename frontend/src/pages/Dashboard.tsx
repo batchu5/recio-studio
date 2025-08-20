@@ -142,7 +142,10 @@ export default function Dashboard() {
 
     function startLocalRecording() {
         console.log("starting the recording");
-        if (!room) return;
+        if (!room) {
+            console.log("Room is empty");
+            return;
+        }
         setIsRecordinStarted(true);
 
         if (!sessionIdRef.current) {
