@@ -102,7 +102,7 @@ export default function Dashboard() {
                         }
                     } else {
                         console.log("Room exists here..", room);
-                        startLocalRecording();
+                        startLocalRecording(room);
                     }
                 }
                 if (msg.action === "stopRecording") {
@@ -145,6 +145,7 @@ export default function Dashboard() {
     }
 
     function stopAllRecordings() {
+
         setIsRecordinStarted(false);
         if (!room) return;
         room.localParticipant.publishData(
@@ -154,9 +155,9 @@ export default function Dashboard() {
         stopLocalRecording();
     }
 
-    function startLocalRecording() {
+    function startLocalRecording(currentRoom: Room) {
         console.log("starting the recording");
-        if (!room) {
+        if (!currentRoom) {
             console.log("Room is empty");
             return;
         }
@@ -167,13 +168,13 @@ export default function Dashboard() {
             return;
         }
 
-        const localVideoPub = Array.from(room.localParticipant.videoTrackPublications.values())[0];
-        const localAudioPub = Array.from(room.localParticipant.audioTrackPublications.values())[0];
+        const localVideoPub = Array.from(currentRoom.localParticipant.videoTrackPublications.values())[0];
+        const localAudioPub = Array.from(currentRoom.localParticipant.audioTrackPublications.values())[0];
 
         const localVideoTrack = localVideoPub?.track  as VideoTrack;
         const localAudioTrack = localAudioPub?.track  as AudioTrack;
 
-        const identity = room.localParticipant.identity || participantName || "anonymous";
+        const identity = currentRoom.localParticipant.identity || participantName || "anonymous";
 
         if (localVideoTrack || localAudioTrack) {
             recorderMap.current[identity] = startRecording(localVideoTrack, localAudioTrack, identity);
