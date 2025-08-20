@@ -62,8 +62,6 @@ export default function Dashboard() {
                 let audioTrack: RemoteAudioTrack | undefined ;
                 let videoTrack: RemoteVideoTrack | undefined ;
 
-                
-
                 if (pub.kind === "audio" && track.kind === "audio") {
                     audioTrack = track as RemoteAudioTrack;
                 }
@@ -86,18 +84,18 @@ export default function Dashboard() {
         });
 
         room.on(RoomEvent.DataReceived, (payload) => {
-        try {
-            console.log("Got the data from the creator to start the recording asf");
-            const msg = JSON.parse(new TextDecoder().decode(payload));
-            if (msg.action === "startRecording") {
-                startLocalRecording();
+            try {
+                console.log("Got the data from the creator to start the recording asf");
+                const msg = JSON.parse(new TextDecoder().decode(payload));
+                if (msg.action === "startRecording") {
+                    startLocalRecording();
+                }
+                if (msg.action === "stopRecording") {
+                    stopLocalRecording();
+                }
+            } catch (err) {
+                console.error("Bad data message", err);
             }
-            if (msg.action === "stopRecording") {
-            stopLocalRecording();
-            }
-        } catch (err) {
-            console.error("Bad data message", err);
-        }
         });
 
         try{
@@ -139,6 +137,7 @@ export default function Dashboard() {
     }
 
     function startLocalRecording() {
+        console.log("starting the recording");
         if (!room) return;
         setIsRecordinStarted(true);
 
