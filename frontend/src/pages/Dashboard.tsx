@@ -101,6 +101,7 @@ export default function Dashboard() {
                             });
                         }
                     } else {
+                        console.log("Room exists here..", room);
                         startLocalRecording();
                     }
                 }
