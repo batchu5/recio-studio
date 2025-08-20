@@ -62,7 +62,12 @@ export default function Dashboard() {
     room.on(
         RoomEvent.TrackSubscribed,
         (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
+            
             console.log("Track subscribed:", pub.kind, participant.identity);
+            setRemoteTracks((prev) => [
+                ...prev,
+                { trackPublications: pub, participantIdentity: participant.identity },
+            ]);
 
             let audioTrack: RemoteAudioTrack | undefined;
             let videoTrack: RemoteVideoTrack | undefined;

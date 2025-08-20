@@ -4,6 +4,7 @@ import Signup from "./pages/Signup";
 import Signin from "./pages/Signin";
 import ProtectedRoute from "./pages/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
+import Studio from "./components/Studio";
 
 export default function App() {
     return (
@@ -21,6 +22,8 @@ export default function App() {
                   <Dashboard />
               </ProtectedRoute>
             } />
+
+            <Route path="/studio/:token" element={<Studio />}></Route>
 
           </Routes>
 
