@@ -15,89 +15,119 @@ type Trackinfo = {
 
 export default function Dashboard() {
 
-  const recorderMap = useRef<Record<string, MediaRecorder>>({});
-  const [room, setRoom] = useState<Room | undefined> (undefined);
-  const [localTrack, setLocalTrack] = useState<VideoTrack | undefined>(undefined);
+    const recorderMap = useRef<Record<string, MediaRecorder>>({});
+    const [room, setRoom] = useState<Room | undefined> (undefined);
+    const [localTrack, setLocalTrack] = useState<VideoTrack | undefined>(undefined);
 
-  const [remoteTracks, setRemoteTracks] = useState<Trackinfo[]>([]);
-  const sessionIdRef = useRef<string>("abc123"); 
-  const BackendUrl = import.meta.env.VITE_BACKEND_URL;
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
-  const role = searchParams.get("role");
+    const [remoteTracks, setRemoteTracks] = useState<Trackinfo[]>([]);
+    const sessionIdRef = useRef<string>("abc123"); 
+    const BackendUrl = import.meta.env.VITE_BACKEND_URL;
+    const [searchParams] = useSearchParams();
+    const token = searchParams.get("token");
+    const role = searchParams.get("role");
 
-  const [recordingUrl, setRecordingUrl] = useState<string>("");
+    const [recordingUrl, setRecordingUrl] = useState<string>("");
 
-  const participantName = useRecoilValue(userIdAtom);
-  const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
-  const roomName = localStorage.getItem("roomName")
-  const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
+    const participantName = useRecoilValue(userIdAtom);
+    const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
+    const roomName = localStorage.getItem("roomName")
+    const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
 
-  useEffect(() => {
-    console.log("role", role);
-  })
+    useEffect(() => {
+        console.log("role", role);
+    })
 
-  async function leaveRoom() {
-        await room?.disconnect();
+    async function leaveRoom() {
+            await room?.disconnect();
 
-        setRoom(undefined);
-        setLocalTrack(undefined);
-        setRemoteTracks([]);
-  }
-
-  async function joinRoom(){
-    sessionIdRef.current = crypto.randomUUID();
-    const room = new Room();
-    setRoom(room);
-    room.on(
-        RoomEvent.TrackSubscribed,
-        (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
-            
-            console.log("Track subscribed:", pub.kind, participant.identity);
-            setRemoteTracks((prev) => [
-                ...prev,
-                { trackPublications: pub, participantIdentity: participant.identity },
-            ]);
-
-            let audioTrack: RemoteAudioTrack | undefined;
-            let videoTrack: RemoteVideoTrack | undefined;
-
-            if (pub.kind === "audio" && track.kind === "audio") {
-            audioTrack = track as RemoteAudioTrack;
-            }
-
-            if (pub.kind === "video" && track.kind === "video") {
-            videoTrack = track as RemoteVideoTrack;
-            }
-
-            if (isRecordingStarted && (videoTrack || audioTrack)) {
-                startRecording(videoTrack!, audioTrack!, participant.identity);
-            }
-        }
-    );
-    room.on(RoomEvent.TrackUnsubscribed, (_track: RemoteTrack, publication: RemoteTrackPublication) => {
-        setRemoteTracks((prev) => prev.filter((track) => track.trackPublications.trackSid !== publication.trackSid));
-    });
-
-    try{
-      
-
-      if(!token){
-        console.log("token is undefined", token);
-        return;
-      }
-      
-      await room.connect(LIVEKIT_URL, token);
-      await room.localParticipant.enableCameraAndMicrophone();
-      setLocalTrack(room.localParticipant.videoTrackPublications.values().next().value?.videoTrack);
-
-    }catch (error) {
-        console.log("There was an error connecting to the room:", (error as Error).message);
-        await leaveRoom();
+            setRoom(undefined);
+            setLocalTrack(undefined);
+            setRemoteTracks([]);
     }
-  } 
+
+    async function joinRoom(){
+        sessionIdRef.current = crypto.randomUUID();
+        const room = new Room();
+        setRoom(room);
+        room.on(
+            RoomEvent.TrackSubscribed,
+            (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
+                console.log("Track subscribed:", pub.kind, participant.identity);
+                setRemoteTracks((prev) => [
+                    ...prev,
+                    { trackPublications: pub, participantIdentity: participant.identity },
+                ]);
+
+                let audioTrack: RemoteAudioTrack | undefined ;
+                let videoTrack: RemoteVideoTrack | undefined ;
+
+                if (pub.kind === "audio" && track.kind === "audio") {
+                    audioTrack = track as RemoteAudioTrack;
+                }
+
+                if (pub.kind === "video" && track.kind === "video") {
+                    videoTrack = track as RemoteVideoTrack;
+                }
+            }
+        );
+
+        room.on(RoomEvent.TrackUnsubscribed, (_track: RemoteTrack, publication: RemoteTrackPublication) => {
+            setRemoteTracks((prev) => prev.filter((track) => track.trackPublications.trackSid !== publication.trackSid));
+        });
+
+        room.on(RoomEvent.DataReceived, (payload) => {
+        try {
+            const msg = JSON.parse(new TextDecoder().decode(payload));
+            if (msg.action === "startRecording") {
+            startLocalRecording();
+            }
+            if (msg.action === "stopRecording") {
+            stopLocalRecording();
+            }
+        } catch (err) {
+            console.error("Bad data message", err);
+        }
+        });
+
+        try{
+            if(!token){
+                console.log("token is undefined", token);
+                return;
+            }
+            
+            await room.connect(LIVEKIT_URL, token);
+            await room.localParticipant.enableCameraAndMicrophone();
+            setLocalTrack(room.localParticipant.videoTrackPublications.values().next().value?.videoTrack);
+
+        }catch (error) {
+            console.log("There was an error connecting to the room:", (error as Error).message);
+            await leaveRoom();
+        }
+    } 
 
     function startAllRecordings() {
+        console.log("recording started", isRecordingStarted);
+        setIsRecordinStarted(true);
+
+        if (!room) return;
+        room.localParticipant.publishData(
+        new TextEncoder().encode(JSON.stringify({ action: "startRecording" })),
+        { reliable: true }
+        );
+        startLocalRecording();
+    }
+
+    function stopAllRecordings() {
+        setIsRecordinStarted(false);
+        if (!room) return;
+        room.localParticipant.publishData(
+        new TextEncoder().encode(JSON.stringify({ action: "stopRecording" })),
+        { reliable: true }
+        );
+        stopLocalRecording();
+    }
+
+    function startLocalRecording() {
         if (!room) return;
         setIsRecordinStarted(true);
 
@@ -110,80 +140,57 @@ export default function Dashboard() {
         if (localVideoTrack && localAudioTrack) {
             recorderMap.current[participantName] = startRecording(localVideoTrack, localAudioTrack, participantName);
         }
-
-        room.remoteParticipants.forEach((p: RemoteParticipant) => {
-            const videoPub: RemoteTrackPublication | undefined = Array.from(p.videoTrackPublications.values())[0];
-            const audioPub: RemoteTrackPublication | undefined = Array.from(p.audioTrackPublications.values())[0];
-
-            const videoTrack = videoPub?.track as RemoteVideoTrack | undefined;
-            const audioTrack = audioPub?.track as RemoteAudioTrack | undefined;
-
-            if (videoTrack && audioTrack) {
-                recorderMap.current[p.identity] = startRecording(videoTrack, audioTrack, p.identity);
-            }
-        });
     }
 
-
-
-  function startRecording(videoTrack : VideoTrack | RemoteVideoTrack, audioTrack : AudioTrack | RemoteAudioTrack, participantName : string){
-        setIsRecordinStarted(true);
-        const stream = new MediaStream();
-        if(videoTrack){
-            stream.addTrack(videoTrack.mediaStreamTrack);
-        }
-
-        if(audioTrack){
-            stream.addTrack(audioTrack.mediaStreamTrack);
-        }
-
-        const recorder = new MediaRecorder(stream, {"mimeType" : "video/webm; codecs=vp8,opus"})
-        recorder.ondataavailable = async (event) => {
-            if (event.data.size > 0) {
-                const blob = event.data;
-                await saveChunk(sessionIdRef.current, participantName, blob);
-                }
-            };
-        recorder.start(5000);
-        
-        startUploadWorker();
-        return recorder;
-  }
-
-    function stopAllRecordings() {
+    function stopLocalRecording() {
         setIsRecordinStarted(false);
         Object.values(recorderMap.current).forEach((recorder) => {
-            stopRecording(recorder);
+        if (recorder.state !== "inactive") recorder.stop();
+        recorder.stream.getTracks().forEach((t) => t.stop());
         });
         recorderMap.current = {};
+        console.log("🛑 Recording stopped for", participantName);
     }
 
-  function stopRecording(recorder: MediaRecorder | null) {
-        setIsRecordinStarted(false);
-        if (!recorder) return;
-        if (recorder.state !== "inactive") {
-            recorder.stop();
-        }
-        recorder.stream.getTracks().forEach(track => track.stop());
-        console.log("🛑 Recording stopped.");
-  }
-
-  async function getUrl(){
-    try {
-        console.log(sessionIdRef.current);
-        const sessionId = sessionIdRef.current;
-        const res = await axios.post(`${BackendUrl}/api/get_url`, {session_id :sessionId},{
-            headers: {
-            "Content-Type": "application/json"
+    function startRecording(videoTrack : VideoTrack | RemoteVideoTrack, audioTrack : AudioTrack | RemoteAudioTrack, participantName : string){
+            setIsRecordinStarted(true);
+            const stream = new MediaStream();
+            if(videoTrack){
+                stream.addTrack(videoTrack.mediaStreamTrack);
             }
-        })
-        setRecordingUrl(res.data.url);
-      console.log(res.data);
-    } catch (error) {
-        console.log("error occured bhahu", error);
-    }
-  }
 
+            if(audioTrack){
+                stream.addTrack(audioTrack.mediaStreamTrack);
+            }
+
+            const recorder = new MediaRecorder(stream, {"mimeType" : "video/webm; codecs=vp8,opus"})
+            recorder.ondataavailable = async (event) => {
+                if (event.data.size > 0) {
+                    const blob = event.data;
+                    await saveChunk(sessionIdRef.current, participantName, blob);
+                    }
+                };
+            recorder.start(5000);
+            
+            startUploadWorker();
+            return recorder;
+    }
+
+    async function getUrl(){
+        try {
+            console.log(sessionIdRef.current);
+            const sessionId = sessionIdRef.current;
+            const res = await axios.post(`${BackendUrl}/api/get_url`, {session_id :sessionId},{
+                headers: {
+                "Content-Type": "application/json"
+                }
+            })
+            setRecordingUrl(res.data.url);
+        console.log(res.data);
+        } catch (error) {
+            console.log("error occured bhahu", error);
+        }
+    }
 
     return (
         <>
@@ -223,7 +230,6 @@ export default function Dashboard() {
                                 {
                                     role === "creator" &&  (
                                     <div>
-                                      
                                         <button onClick={startAllRecordings}>
                                             Start recording all
                                         </button>
