@@ -3,8 +3,7 @@ import {  RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublicati
 import {  useEffect, useRef, useState } from "react";
 import VideoComponent from "../components/videoComponent";
 import AudioComponent from "../components/AudioComponent";
-import { useRecoilValue } from "recoil";
-import { userIdAtom } from "../atoms/userId";
+
 import { saveChunk, startUploadWorker } from "../utils/uploadworker";
 import {  useSearchParams } from "react-router-dom";
 
@@ -21,6 +20,7 @@ export default function Dashboard() {
 
     const [remoteTracks, setRemoteTracks] = useState<Trackinfo[]>([]);
     const sessionIdRef = useRef<string>("abc123"); 
+    const RecordingRef = useRef<string | null>(null);
     const BackendUrl = import.meta.env.VITE_BACKEND_URL;
     const [searchParams] = useSearchParams();
     const token = searchParams.get("token");
@@ -28,7 +28,7 @@ export default function Dashboard() {
 
     const [recordingUrl, setRecordingUrl] = useState<string>("");
 
-    const participantName = useRecoilValue(userIdAtom);
+    const participantName = localStorage.getItem("participantName");
     const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
     const roomName = localStorage.getItem("roomName")
     const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
@@ -88,6 +88,8 @@ export default function Dashboard() {
                 console.log("Got the data from the creator to start the recording asf");
                 const msg = JSON.parse(new TextDecoder().decode(payload));
                 if (msg.action === "startRecording") {
+                    RecordingRef.current = msg.recordingId;
+                    sessionIdRef.current = msg.recordingId;
                     startLocalRecording();
                 }
                 if (msg.action === "stopRecording") {
@@ -115,12 +117,14 @@ export default function Dashboard() {
     } 
 
     function startAllRecordings() {
+        RecordingRef.current = crypto.randomUUID();
+        sessionIdRef.current = RecordingRef.current;
         console.log("recording started", isRecordingStarted);
         setIsRecordinStarted(true);
 
         if (!room) return;
         room.localParticipant.publishData(
-            new TextEncoder().encode(JSON.stringify({ action: "startRecording" })),
+            new TextEncoder().encode(JSON.stringify({ action: "startRecording", recordingId : RecordingRef.current })),
             { reliable: true }
         );
         startLocalRecording();
@@ -141,15 +145,23 @@ export default function Dashboard() {
         if (!room) return;
         setIsRecordinStarted(true);
 
+        if (!sessionIdRef.current) {
+            console.warn("No shared recordingId yet; not starting recording.");
+            return;
+        }
+
         const localVideoPub = Array.from(room.localParticipant.videoTrackPublications.values())[0];
         const localAudioPub = Array.from(room.localParticipant.audioTrackPublications.values())[0];
 
         const localVideoTrack = localVideoPub?.track  as VideoTrack;
         const localAudioTrack = localAudioPub?.track  as AudioTrack;
 
-        if (localVideoTrack && localAudioTrack) {
-            recorderMap.current[participantName] = startRecording(localVideoTrack, localAudioTrack, participantName);
+        const identity = room.localParticipant.identity || participantName || "anonymous";
+
+        if (localVideoTrack || localAudioTrack) {
+            recorderMap.current[identity] = startRecording(localVideoTrack, localAudioTrack, identity);
         }
+
     }
 
     function stopLocalRecording() {
@@ -177,7 +189,7 @@ export default function Dashboard() {
             recorder.ondataavailable = async (event) => {
                 if (event.data.size > 0) {
                     const blob = event.data;
-                    await saveChunk(sessionIdRef.current, participantName, blob);
+                        await saveChunk(sessionIdRef.current, participantName, blob);
                     }
                 };
             recorder.start(5000);
@@ -257,7 +269,7 @@ export default function Dashboard() {
                     </div>
                     <div id="layout-container">
                         {localTrack && (
-                            <VideoComponent track={localTrack} participantIdentity={participantName} local={true} />
+                            <VideoComponent track={localTrack} participantIdentity={participantName || "Test User"} local={true} />
                         )}
                         {remoteTracks.map((remoteTrack) =>
                             remoteTrack.trackPublications.kind === "video" ? (
