@@ -97,7 +97,7 @@ export default function Dashboard() {
                         const r = await joinRoom();
                         if (r) {
                             r.on("connected", () => {
-                            startLocalRecording();
+                            startLocalRecording(r);
                             });
                         }
                     } else {
@@ -141,7 +141,7 @@ export default function Dashboard() {
             new TextEncoder().encode(JSON.stringify({ action: "startRecording", recordingId : RecordingRef.current })),
             { reliable: true }
         );
-        startLocalRecording();
+        startLocalRecording(room);
     }
 
     function stopAllRecordings() {
