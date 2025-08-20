@@ -1,11 +1,12 @@
 import axios from "axios";
-import { LocalVideoTrack, RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, RemoteVideoTrack, Room, RoomEvent, type AudioTrack, type VideoTrack } from "livekit-client";
-import {  useRef, useState } from "react";
+import {  RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, RemoteVideoTrack, Room, RoomEvent, type AudioTrack, type VideoTrack } from "livekit-client";
+import {  useEffect, useRef, useState } from "react";
 import VideoComponent from "../components/videoComponent";
 import AudioComponent from "../components/AudioComponent";
 import { useRecoilValue } from "recoil";
 import { userIdAtom } from "../atoms/userId";
 import { saveChunk, startUploadWorker } from "../utils/uploadworker";
+import {  useSearchParams } from "react-router-dom";
 
 type Trackinfo = {
   trackPublications : RemoteTrackPublication,
@@ -13,42 +14,32 @@ type Trackinfo = {
 }
 
 export default function Dashboard() {
+
+  const recorderMap = useRef<Record<string, MediaRecorder>>({});
   const [room, setRoom] = useState<Room | undefined> (undefined);
-  const [localTrack, setLocalTrack] = useState<LocalVideoTrack | undefined>(undefined);
+  const [localTrack, setLocalTrack] = useState<VideoTrack | undefined>(undefined);
+
   const [remoteTracks, setRemoteTracks] = useState<Trackinfo[]>([]);
   const sessionIdRef = useRef<string>("abc123"); 
   const BackendUrl = import.meta.env.VITE_BACKEND_URL;
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
+  const role = searchParams.get("role");
 
   const [recordingUrl, setRecordingUrl] = useState<string>("");
 
   const participantName = useRecoilValue(userIdAtom);
   const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
-  const [roomName, setRoomName] = useState("Test Room");
-
+  const roomName = localStorage.getItem("roomName")
   const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
-  const recorderRef = useRef<MediaRecorder | null>(null);
 
-
-  async function getToken(roomName: string, participantName: string){
-
-    try {
-      const res = await axios.post(`${BackendUrl}/getToken`, {roomName, participantId: participantName},{
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-      return res.data.token;
-    } catch (error) {
-        console.log("error occured bhahu", error);
-    }
-    
-  }
+  useEffect(() => {
+    console.log("role", role);
+  })
 
   async function leaveRoom() {
-        // Leave the room by calling 'disconnect' method over the Room object
         await room?.disconnect();
 
-        // Reset the state
         setRoom(undefined);
         setLocalTrack(undefined);
         setRemoteTracks([]);
@@ -58,7 +49,6 @@ export default function Dashboard() {
     sessionIdRef.current = crypto.randomUUID();
     const room = new Room();
     setRoom(room);
-
     room.on(
         RoomEvent.TrackSubscribed,
         (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
@@ -85,16 +75,18 @@ export default function Dashboard() {
             }
         }
     );
-
-
-
     room.on(RoomEvent.TrackUnsubscribed, (_track: RemoteTrack, publication: RemoteTrackPublication) => {
         setRemoteTracks((prev) => prev.filter((track) => track.trackPublications.trackSid !== publication.trackSid));
     });
 
     try{
-      const token = await getToken(roomName, participantName);
+      
 
+      if(!token){
+        console.log("token is undefined", token);
+        return;
+      }
+      
       await room.connect(LIVEKIT_URL, token);
       await room.localParticipant.enableCameraAndMicrophone();
       setLocalTrack(room.localParticipant.videoTrackPublications.values().next().value?.videoTrack);
@@ -103,8 +95,36 @@ export default function Dashboard() {
         console.log("There was an error connecting to the room:", (error as Error).message);
         await leaveRoom();
     }
-
   } 
+
+    function startAllRecordings() {
+        if (!room) return;
+        setIsRecordinStarted(true);
+
+        const localVideoPub = Array.from(room.localParticipant.videoTrackPublications.values())[0];
+        const localAudioPub = Array.from(room.localParticipant.audioTrackPublications.values())[0];
+
+        const localVideoTrack = localVideoPub?.track  as VideoTrack;
+        const localAudioTrack = localAudioPub?.track  as AudioTrack;
+
+        if (localVideoTrack && localAudioTrack) {
+            recorderMap.current[participantName] = startRecording(localVideoTrack, localAudioTrack, participantName);
+        }
+
+        room.remoteParticipants.forEach((p: RemoteParticipant) => {
+            const videoPub: RemoteTrackPublication | undefined = Array.from(p.videoTrackPublications.values())[0];
+            const audioPub: RemoteTrackPublication | undefined = Array.from(p.audioTrackPublications.values())[0];
+
+            const videoTrack = videoPub?.track as RemoteVideoTrack | undefined;
+            const audioTrack = audioPub?.track as RemoteAudioTrack | undefined;
+
+            if (videoTrack && audioTrack) {
+                recorderMap.current[p.identity] = startRecording(videoTrack, audioTrack, p.identity);
+            }
+        });
+    }
+
+
 
   function startRecording(videoTrack : VideoTrack | RemoteVideoTrack, audioTrack : AudioTrack | RemoteAudioTrack, participantName : string){
         setIsRecordinStarted(true);
@@ -129,6 +149,14 @@ export default function Dashboard() {
         startUploadWorker();
         return recorder;
   }
+
+    function stopAllRecordings() {
+        setIsRecordinStarted(false);
+        Object.values(recorderMap.current).forEach((recorder) => {
+            stopRecording(recorder);
+        });
+        recorderMap.current = {};
+    }
 
   function stopRecording(recorder: MediaRecorder | null) {
         setIsRecordinStarted(false);
@@ -173,17 +201,6 @@ export default function Dashboard() {
                               Participant:  {participantName}
                                 
                             </div>
-                            <div>
-                                <label htmlFor="room-name">Room</label>
-                                <input
-                                    id="room-name"
-                                    className="form-control"
-                                    type="text"
-                                    value={roomName}
-                                    onChange={(e) => setRoomName(e.target.value)}
-                                    required
-                                />
-                            </div>
                             
                             <button
                                 className="btn btn-lg btn-success"
@@ -203,35 +220,23 @@ export default function Dashboard() {
                             Leave Room
                         </button>
                         <div>
-                                {!room && <div>Room is empty </div>} 
-                                {room && (
-                                    
-                                    <button
-                                        onClick={() => {
-                                        recorderRef.current = startRecording(
-                                            localTrack!,
-                                            //@ts-ignore
-                                            room.localParticipant.audioTrackPublications.values().next().value?.audioTrack,
-                                            participantName
-                                        );
-                                        }}
-                                    >
-                                        Start Recording
-                                    </button>
-                                )}
-                                {room && (
-                                <button
-                                    onClick={() => {
-                                    stopRecording(recorderRef.current);
-                                    recorderRef.current = null;
-                                    }}
-                                >
-                                    End Recording
-                                </button>
-                                )}
-                                url of the recording: {recordingUrl}
+                                {
+                                    role === "creator" &&  (
+                                    <div>
+                                      
+                                        <button onClick={startAllRecordings}>
+                                            Start recording all
+                                        </button>
 
-                                <button onClick={getUrl}>Get URL</button>
+                                        <button onClick={stopAllRecordings}>
+                                            End recording all
+                                        </button>
+
+                                        url of the recording: {recordingUrl}
+                                        <button onClick={getUrl}>Get URL</button>
+                                    </div>
+                                )}
+                                
                         </div>
                     </div>
                     <div id="layout-container">

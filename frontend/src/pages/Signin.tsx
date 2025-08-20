@@ -24,7 +24,7 @@ export default function Signin() {
       console.log("participant email", response.data.user.email);
 
       localStorage.setItem("token", response.data.token);
-      navigate("/dashboard");
+      navigate("/preStudio");
 
     }catch (error: any) {
         if (error.response) {
