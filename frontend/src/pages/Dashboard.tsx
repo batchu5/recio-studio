@@ -53,6 +53,7 @@ export default function Dashboard() {
             RoomEvent.TrackSubscribed,
             (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
                 console.log("Track subscribed:", pub.kind, participant.identity);
+
                 setRemoteTracks((prev) => [
                     ...prev,
                     { trackPublications: pub, participantIdentity: participant.identity },
@@ -86,9 +87,10 @@ export default function Dashboard() {
 
         room.on(RoomEvent.DataReceived, (payload) => {
         try {
+            console.log("Got the data from the creator to start the recording asf");
             const msg = JSON.parse(new TextDecoder().decode(payload));
             if (msg.action === "startRecording") {
-            startLocalRecording();
+                startLocalRecording();
             }
             if (msg.action === "stopRecording") {
             stopLocalRecording();
@@ -120,8 +122,8 @@ export default function Dashboard() {
 
         if (!room) return;
         room.localParticipant.publishData(
-        new TextEncoder().encode(JSON.stringify({ action: "startRecording" })),
-        { reliable: true }
+            new TextEncoder().encode(JSON.stringify({ action: "startRecording" })),
+            { reliable: true }
         );
         startLocalRecording();
     }
