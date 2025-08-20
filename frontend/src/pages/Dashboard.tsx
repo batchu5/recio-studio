@@ -61,12 +61,21 @@ export default function Dashboard() {
                 let audioTrack: RemoteAudioTrack | undefined ;
                 let videoTrack: RemoteVideoTrack | undefined ;
 
+                
+
                 if (pub.kind === "audio" && track.kind === "audio") {
                     audioTrack = track as RemoteAudioTrack;
                 }
 
                 if (pub.kind === "video" && track.kind === "video") {
                     videoTrack = track as RemoteVideoTrack;
+                }
+
+                if (audioTrack) {
+                    console.log("Remote audio subscribed", participant.identity, audioTrack);
+                }
+                if (videoTrack) {
+                    console.log("Remote video subscribed", participant.identity, videoTrack);
                 }
             }
         );
