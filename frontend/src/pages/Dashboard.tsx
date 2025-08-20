@@ -48,6 +48,7 @@ export default function Dashboard() {
     async function joinRoom(){
         sessionIdRef.current = crypto.randomUUID();
         const room = new Room();
+
         setRoom(room);
         room.on(
             RoomEvent.TrackSubscribed,
@@ -83,14 +84,25 @@ export default function Dashboard() {
             setRemoteTracks((prev) => prev.filter((track) => track.trackPublications.trackSid !== publication.trackSid));
         });
 
-        room.on(RoomEvent.DataReceived, (payload) => {
+        room.on(RoomEvent.DataReceived, async (payload) => {
             try {
                 console.log("Got the data from the creator to start the recording asf");
                 const msg = JSON.parse(new TextDecoder().decode(payload));
                 if (msg.action === "startRecording") {
                     RecordingRef.current = msg.recordingId;
                     sessionIdRef.current = msg.recordingId;
-                    startLocalRecording();
+
+                    if (!room) {
+                        console.log("Joining room first...");
+                        const r = await joinRoom();
+                        if (r) {
+                            r.on("connected", () => {
+                            startLocalRecording();
+                            });
+                        }
+                    } else {
+                        startLocalRecording();
+                    }
                 }
                 if (msg.action === "stopRecording") {
                     stopLocalRecording();
@@ -109,6 +121,7 @@ export default function Dashboard() {
             await room.connect(LIVEKIT_URL, token);
             await room.localParticipant.enableCameraAndMicrophone();
             setLocalTrack(room.localParticipant.videoTrackPublications.values().next().value?.videoTrack);
+            return room;
 
         }catch (error) {
             console.log("There was an error connecting to the room:", (error as Error).message);
