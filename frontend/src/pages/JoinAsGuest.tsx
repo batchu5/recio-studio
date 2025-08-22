@@ -1,12 +1,10 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useRecoilValue } from "recoil";
-import { userIdAtom } from "../atoms/userId";
 import axios from "axios";
 
 export default function JoinAsGuest(){
 
     const { roomName } = useParams();
-    const participantName = useRecoilValue(userIdAtom);
+    const participantName = localStorage.getItem("participantName");
     const navigate = useNavigate();
     const BackendUrl = import.meta.env.VITE_BACKEND_URL;
 
