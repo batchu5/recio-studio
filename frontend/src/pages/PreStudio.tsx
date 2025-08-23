@@ -10,6 +10,7 @@ export default function PreStudio(){
     const navigate = useNavigate();
     
     const joinAsCreator = async () => {
+
       const { token, room } = await axios.post(`${BackendUrl}/getToken`, {
         roomName,
         participantName: participantName,
@@ -18,6 +19,7 @@ export default function PreStudio(){
 
       const shareLink = `${window.location.origin}/join/${room.name}`;
       localStorage.setItem("roomName", room.name);
+      localStorage.setItem("roomId", room.id);
       navigate(`/dashboard?token=${token}&role=creator`);
     
       console.log("Share this link with guests:", shareLink);

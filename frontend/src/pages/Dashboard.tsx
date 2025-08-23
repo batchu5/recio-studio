@@ -19,7 +19,8 @@ export default function Dashboard() {
     const [localTrack, setLocalTrack] = useState<VideoTrack | undefined>(undefined);
 
     const [remoteTracks, setRemoteTracks] = useState<Trackinfo[]>([]);
-    const sessionIdRef = useRef<string>("abc123"); 
+    const sessionIdRef = useRef<string| null>(""); 
+    
     const RecordingRef = useRef<string | null>(null);
     const BackendUrl = import.meta.env.VITE_BACKEND_URL;
     const [searchParams] = useSearchParams();
@@ -46,7 +47,8 @@ export default function Dashboard() {
     }
 
     async function joinRoom(){
-        sessionIdRef.current = crypto.randomUUID();
+
+        sessionIdRef.current = localStorage.getItem("roomId") ;
         const room = new Room();
 
         setRoom(room);
@@ -205,7 +207,7 @@ export default function Dashboard() {
 
             const recorder = new MediaRecorder(stream, {"mimeType" : "video/webm; codecs=vp8,opus"})
             recorder.ondataavailable = async (event) => {
-                if (event.data.size > 0) {
+                if (event.data.size > 0 && sessionIdRef.current) {
                     const blob = event.data;
                         await saveChunk(sessionIdRef.current, participantName, blob);
                     }
