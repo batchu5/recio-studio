@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function PreStudio(){
     const [roomName, setRoomName] = useState<string>(`Test_Room${Date.now()}`);
-    const participantName = useRecoilValue(userIdAtom);
+    const participantName = localStorage.getItem("participantName");
     const BackendUrl = import.meta.env.VITE_BACKEND_URL;
     const navigate = useNavigate();
     
