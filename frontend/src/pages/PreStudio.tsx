@@ -13,7 +13,7 @@ export default function PreStudio(){
     const joinAsCreator = async () => {
       const { token, room } = await axios.post(`${BackendUrl}/getToken`, {
         roomName,
-        participantId: participantName,
+        participantName: participantName,
         role: "creator"
       }).then(res => res.data);
 
