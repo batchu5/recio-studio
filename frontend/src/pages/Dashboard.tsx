@@ -234,6 +234,18 @@ export default function Dashboard() {
         }
     }
 
+    async function getMergedUrl(){
+        try {
+
+            const finalurl = await axios.post(`${BackendUrl}/api/get_merged_url`);
+            console.log("finalurl from getMergedUrl", finalurl);
+
+        } catch (error) {
+            console.log("error from the getMergedUrl", error);
+        }
+        
+    }
+
     return (
         <>
             {!room ? (
@@ -282,6 +294,8 @@ export default function Dashboard() {
 
                                         url of the recording: {recordingUrl}
                                         <button onClick={getUrl}>Get URL</button>
+
+                                        <button onClick={getMergedUrl}>get total merged url</button>
                                     </div>
                                 )}
                                 
