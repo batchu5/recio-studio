@@ -219,7 +219,7 @@ export default function Dashboard() {
     async function getUrl(){
         try {
             console.log(sessionIdRef.current);
-            const sessionId = sessionIdRef.current;
+            const sessionId = sessionIdRef.current; 
             const res = await axios.post(`${BackendUrl}/api/get_url`, {session_id :sessionId},{
                 headers: {
                 "Content-Type": "application/json"

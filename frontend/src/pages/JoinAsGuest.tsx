@@ -15,7 +15,7 @@ export default function JoinAsGuest(){
         }
         const { token } = await axios.post(`${BackendUrl}/getToken`, {
             roomName,
-            participantId: participantName,
+            participantName: participantName,
             role: "guest"
         }).then(res => res.data);
 
