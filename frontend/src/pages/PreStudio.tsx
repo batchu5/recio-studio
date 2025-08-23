@@ -12,10 +12,12 @@ export default function PreStudio(){
     const joinAsCreator = async () => {
 
       const { token, room } = await axios.post(`${BackendUrl}/getToken`, {
-        roomName,
+        roomName: roomName,
         participantName: participantName,
         role: "creator"
       }).then(res => res.data);
+
+
 
       const shareLink = `${window.location.origin}/join/${room.name}`;
       localStorage.setItem("roomName", room.name);

@@ -133,7 +133,7 @@ export default function Dashboard() {
     } 
 
     function startAllRecordings() {
-        RecordingRef.current = crypto.randomUUID();
+        RecordingRef.current = localStorage.getItem("roomId");
         sessionIdRef.current = RecordingRef.current;
         console.log("recording started", isRecordingStarted);
         setIsRecordinStarted(true);
