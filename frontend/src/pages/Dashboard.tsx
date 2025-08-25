@@ -6,6 +6,7 @@ import AudioComponent from "../components/AudioComponent";
 
 import { saveChunk, startUploadWorker } from "../utils/uploadworker";
 import {  useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 type Trackinfo = {
   trackPublications : RemoteTrackPublication,
@@ -15,12 +16,12 @@ type Trackinfo = {
 export default function Dashboard() {
 
     const recorderMap = useRef<Record<string, MediaRecorder>>({});
+
     const [room, setRoom] = useState<Room | undefined> (undefined);
     const [localTrack, setLocalTrack] = useState<VideoTrack | undefined>(undefined);
 
     const [remoteTracks, setRemoteTracks] = useState<Trackinfo[]>([]);
     const sessionIdRef = useRef<string| null>(""); 
-    
     const RecordingRef = useRef<string | null>(null);
     const BackendUrl = import.meta.env.VITE_BACKEND_URL;
     const [searchParams] = useSearchParams();
@@ -274,38 +275,15 @@ export default function Dashboard() {
                     </div>
                 </div>
             ) : (
-                <div id="room">
-                    <div id="room-header">
-                        <h2 id="room-title">{roomName}</h2>
-                        <button className="btn btn-danger" id="leave-room-button" onClick={leaveRoom}>
-                            Leave Room
-                        </button>
-                        <div>
-                                {
-                                    role === "creator" &&  (
-                                    <div>
-                                        <button onClick={startAllRecordings}>
-                                            Start recording all
-                                        </button>
-
-                                        <button onClick={stopAllRecordings}>
-                                            End recording all
-                                        </button>
-
-                                        url of the recording: {recordingUrl}
-                                        <button onClick={getUrl}>Get URL</button>
-
-                                        <button onClick={getMergedUrl}>get total merged url</button>
-                                    </div>
-                                )}
-                                
-                        </div>
-                    </div>
-                    <div id="layout-container">
+                <div className="bg-blue-400 h-screen">
+                    
+                    <div className=" bg-amber-500 h-9/12 p-4 ">
                         {localTrack && (
                             <VideoComponent track={localTrack} participantIdentity={participantName || "Test User"} local={true} />
                         )}
-                        {remoteTracks.map((remoteTrack) =>
+
+                        <div >
+                            {remoteTracks.map((remoteTrack) =>
                             remoteTrack.trackPublications.kind === "video" ? (
                                 <VideoComponent
                                     key={remoteTrack.trackPublications.trackSid}
@@ -318,7 +296,35 @@ export default function Dashboard() {
                                     track={remoteTrack.trackPublications.audioTrack!}
                                 />
                             )
-                        )}
+                            )}
+                        </div>
+                        
+                    </div>
+                    <div >
+                        <h2 >{roomName}</h2>
+                        <Button variant="destructive" onClick={leaveRoom}>
+                            Leave Room
+                        </Button>
+                        <div>
+                                {
+                                    role === "creator" &&  (
+                                    <div>
+                                        <Button onClick={startAllRecordings}>
+                                            Start recording all
+                                        </Button>
+
+                                        <Button onClick={stopAllRecordings}>
+                                            End recording all
+                                        </Button>
+
+                                        url of the recording: {recordingUrl}
+                                        <Button onClick={getUrl}>Get URL</Button>
+
+                                        <Button onClick={getMergedUrl}>get total merged url</Button>
+                                    </div>
+                                )}
+                                
+                        </div>
                     </div>
                 </div>
             )}
