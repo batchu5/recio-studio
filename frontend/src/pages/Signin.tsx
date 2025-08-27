@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useSetRecoilState } from "recoil";
 import { userIdAtom } from "../atoms/userId";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function Signin() {
   const [email, setEmail] = useState("");
@@ -27,39 +29,54 @@ export default function Signin() {
       localStorage.setItem("participantName", response.data.user.email);
       navigate("/preStudio");
 
-    }catch (error: any) {
-        if (error.response) {
-            console.log({"error" : error})
-        } 
+    } catch (error: any) {
+      if (error.response) {
+        console.log({ "error": error })
+      }
     }
   };
 
   return (
-    <div>
-      <h2>Signin</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+    <div className="h-screen w-screen flex justify-center items-center ">
+      <div className="rounded-xl  bg-linear-to-tr from-70% from-black to-cyan-300 pt-[0.5px] pr-[0.5px]">
+        <div className="rounded-xl  bg-linear-to-bl from-70% from-black to-cyan-300 pl-[0.5px] pb-[0.5px]">
+
+        <div className="px-8 py-8 rounded-xl bg-black">
+          <div className="">
+          <h1 className="text-2xl text-center font-bold">Welcome back</h1>
+          <h3 className="mb-6 text-neutral-400">Login to your account to continue</h3>
+
+          <form onSubmit={handleSubmit} className="">
+            <div>
+              <label>Username</label>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="email" />
+
+            </div>
+
+            <div>
+              <label>Password</label>
+              <Input
+                placeholder="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="text-xs cursor-pointer hover:text-cyan-300 text-neutral-500 text-right mt-1">Forget Password</div>
+
+            <Button className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300" onSubmit={handleSubmit}>Login</Button>
+          </form>
+
         </div>
 
-        <div>
-          <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+        </div>
+        
         </div>
 
-        <button type="submit">Signin</button>
-      </form>
+      </div>
     </div>
+
   );
 }

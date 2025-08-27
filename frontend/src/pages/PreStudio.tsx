@@ -2,6 +2,8 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function PreStudio(){
     const [roomName, setRoomName] = useState<string>(`Test_Room${Date.now()}`);
@@ -10,14 +12,12 @@ export default function PreStudio(){
     const navigate = useNavigate();
     
     const joinAsCreator = async () => {
-
+      console.log("participantName:", participantName);
       const { token, room } = await axios.post(`${BackendUrl}/getToken`, {
         roomName: roomName,
         participantName: participantName,
         role: "creator"
       }).then(res => res.data);
-
-
 
       const shareLink = `${window.location.origin}/join/${room.name}`;
       localStorage.setItem("roomName", room.name);
@@ -28,10 +28,16 @@ export default function PreStudio(){
 
     };
 
-    return <div>
-        participant Identity : {participantName}
-        Enter the roomName : <input type="text" onChange={(e) => setRoomName(e.target.value)}/>
+    return <div className="flex justify-center items-center h-screen w-screen">
+      <div  className="px-4 py-8 rounded-2xl border border-neutral-300">
+        <span className="mb-2">Enter the roomName  </span>
+        <Input type="text" onChange={(e) => setRoomName(e.target.value)} placeholder="RoomName" className="mt-2"/>
+        <div className="flex items-center justify-center">
 
-        <button onClick={joinAsCreator}> Join the room </button>
+        <Button onClick={joinAsCreator} className="mt-2"> Join the room </Button>
+        </div>
+
+      </div>
+        
     </div>
 }
