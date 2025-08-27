@@ -25,14 +25,22 @@ export default function PreStudio(){
       navigate(`/dashboard?token=${token}&role=creator`);
     
       console.log("Share this link with guests:", shareLink);
-
     };
 
+    const getRooms = async () => {
+        const result = await axios.post(`${BackendUrl}/getRooms`, {
+          participantName: participantName
+        }) 
+
+        console.log("rooms", result.data);
+    }
     return <div className="flex justify-center items-center h-screen w-screen">
       <div  className="px-4 py-8 rounded-2xl border border-neutral-300">
         <span className="mb-2">Enter the roomName  </span>
         <Input type="text" onChange={(e) => setRoomName(e.target.value)} placeholder="RoomName" className="mt-2"/>
         <div className="flex items-center justify-center">
+
+        <Button onClick={getRooms} className="mt-2 mr-1">Get previous rooms data</Button>
 
         <Button onClick={joinAsCreator} className="mt-2"> Join the room </Button>
         </div>
