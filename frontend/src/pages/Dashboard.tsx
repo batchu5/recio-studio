@@ -223,7 +223,7 @@ export default function Dashboard() {
         try {
             console.log(sessionIdRef.current);
             const sessionId = sessionIdRef.current; 
-            const res = await axios.post(`${BackendUrl}/api/get_url`, {session_Id : sessionId},{
+            const res = await axios.post(`${BackendUrl}/api/get_url`, {session_id : sessionId},{
                 headers: {
                 "Content-Type": "application/json"
                 }
@@ -238,7 +238,7 @@ export default function Dashboard() {
     async function getMergedUrl(){
         try {
             const sessionId = sessionIdRef.current;
-            const finalurl = await axios.post(`${BackendUrl}/api/get_merged_url`, {sessionId});
+            const finalurl = await axios.post(`${BackendUrl}/api/get_merged_url`, {session_Id: sessionId});
             console.log("finalurl from getMergedUrl", finalurl);
 
         } catch (error) {
