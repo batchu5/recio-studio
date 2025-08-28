@@ -237,8 +237,8 @@ export default function Dashboard() {
 
     async function getMergedUrl(){
         try {
-
-            const finalurl = await axios.post(`${BackendUrl}/api/get_merged_url`);
+            const sessionId = sessionIdRef.current;
+            const finalurl = await axios.post(`${BackendUrl}/api/get_merged_url`, {sessionId});
             console.log("finalurl from getMergedUrl", finalurl);
 
         } catch (error) {
