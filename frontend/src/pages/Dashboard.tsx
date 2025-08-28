@@ -223,9 +223,9 @@ export default function Dashboard() {
         try {
             console.log(sessionIdRef.current);
             const sessionId = sessionIdRef.current; 
-            const res = await axios.post(`${BackendUrl}/api/get_url`, {session_id : sessionId},{
+            const res = await axios.post(`${BackendUrl}/api/get_url`, {sessionId : sessionId},{
                 headers: {
-                "Content-Type": "application/json"
+                    "Content-Type": "application/json"
                 }
             })
             setRecordingUrl(res.data.url);
