@@ -275,14 +275,13 @@ export default function Dashboard() {
                     </div>
                 </div>
             ) : (
-                <div className="bg-blue-400 h-screen">
-                    
-                    <div className=" bg-amber-500 h-9/12 p-4 ">
-                        {localTrack && (
-                            <VideoComponent track={localTrack} participantIdentity={participantName || "Test User"} local={true} />
-                        )}
+                <div className="h-screen ">
+                    <div className=" bg-amber-500 h-10/12 p-4   ">
+                        <div className="grid grid-cols-3">
+                            {localTrack && (
+                                <VideoComponent track={localTrack} participantIdentity={participantName || "Test User"} local={true} />
+                            )}
 
-                        <div >
                             {remoteTracks.map((remoteTrack) =>
                             remoteTrack.trackPublications.kind === "video" ? (
                                 <VideoComponent

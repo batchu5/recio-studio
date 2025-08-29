@@ -18,5 +18,5 @@ export default function AudioComponent({ track }: AudioComponentProps) {
         };
     }, [track]);
 
-    return <audio ref={audioElement} id={track.sid} />;
+    return <audio ref={audioElement} id={track.sid} className="w-[300px] h-[200px]"/>;
 }

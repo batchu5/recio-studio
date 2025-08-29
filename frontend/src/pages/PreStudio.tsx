@@ -5,9 +5,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+interface roomProps { 
+  url : string,
+  roomName: string
+}
+
 export default function PreStudio(){
     const [roomName, setRoomName] = useState<string>(`Test_Room${Date.now()}`);
-    const [urls, setUrls] = useState<string[]>([]);
+    const [urls, setUrls] = useState<roomProps[]>([]);
     const participantName = localStorage.getItem("participantName");
     const BackendUrl = import.meta.env.VITE_BACKEND_URL;
     const navigate = useNavigate();
@@ -41,35 +46,32 @@ export default function PreStudio(){
       fetch();
   
     },[]);
-    const getRooms = async () => {
-        const result = await axios.post(`${BackendUrl}/prev_mixed_urls`, {
-          participantName: participantName
-        }) 
-
-        console.log("mixed Urls", result.data);
-    }
+    
 
     return <div className="  ">
-      <div  className="px-4 py-8 rounded-2xl ">
-        <span className="mb-2">Enter the roomName  </span>
-        <Input type="text" onChange={(e) => setRoomName(e.target.value)} placeholder="RoomName" className="mt-2"/>
-        <div className="flex items-center justify-center">
+      <div  className="py-8 rounded-2xl px-4 text-center">
+        <span className="mb-2 text-2xl ">Create a new Room</span>
+        <div className="flex gap-4 justify-center">
+          <Input type="text" onChange={(e) => setRoomName(e.target.value)} placeholder="RoomName" className="mt-2 w-fit"/>
+          <span className="flex items-center justify-center ">
+            <Button onClick={joinAsCreator} className="mt-2 bg-cyan-300" > Join the room </Button>
+          </span>
 
-        <Button onClick={getRooms} className="mt-2 mr-1">Get previous rooms data</Button>
-
-        <Button onClick={joinAsCreator} className="mt-2"> Join the room </Button>
         </div>
+        
 
       </div>
 
       <div>
-        <h1 className="text-2xl mb-4">Rooms Created</h1>
-        <div className="grid grid-cols-3">
+        <h1 className="text-2xl mb-4 px-4 text-cyan-200">Previous rooms</h1>
+        <div className="grid grid-cols-3 px-6">
           {
-            urls.map((url) => 
-            <div> 
-              <video src={url} width="300px" height={"300px"} controls className="rounded-xl"/>
+            urls.map((room) => 
+            <div className=""> 
+              <span className="text-xl  pb-10 ml-4 ">{room.roomName}</span>
+              <video src={room.url} controls className="w-full h-[300px] object-cover rounded-xl mt-2"/>
             </div>)
+            
           }
 
         </div>
