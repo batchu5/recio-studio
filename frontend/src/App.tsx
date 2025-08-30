@@ -6,6 +6,7 @@ import ProtectedRoute from "./pages/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import PreStudio from "./pages/PreStudio";
 import JoinAsGuest from "./pages/JoinAsGuest";
+import UniqueRoom from "./pages/UniqueRoom";
 
 export default function App() {
     return (
@@ -31,6 +32,8 @@ export default function App() {
                   <JoinAsGuest />
               </ProtectedRoute>
             } />
+
+            <Route path="/preStudio/:roomId" element={<UniqueRoom />} />
 
 
           </Routes>

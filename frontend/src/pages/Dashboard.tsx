@@ -40,6 +40,8 @@ export default function Dashboard() {
     })
 
     async function leaveRoom() {
+            await getUrl();
+            await getMergedUrl();
             await room?.disconnect();
 
             setRoom(undefined);
@@ -147,7 +149,7 @@ export default function Dashboard() {
         startLocalRecording(room);
     }
 
-    function stopAllRecordings() {
+    async function stopAllRecordings() {
 
         setIsRecordinStarted(false);
         if (!room) return;
@@ -189,7 +191,7 @@ export default function Dashboard() {
         setIsRecordinStarted(false);
         Object.values(recorderMap.current).forEach((recorder) => {
         if (recorder.state !== "inactive") recorder.stop();
-        recorder.stream.getTracks().forEach((t) => t.stop());
+            recorder.stream.getTracks().forEach((t) => t.stop());
         });
         recorderMap.current = {};
         console.log("🛑 Recording stopped for", participantName);
@@ -316,10 +318,7 @@ export default function Dashboard() {
                                             End recording all
                                         </Button>
 
-                                        url of the recording: {recordingUrl}
-                                        <Button onClick={getUrl}>Get URL</Button>
-
-                                        <Button onClick={getMergedUrl}>get total merged url</Button>
+                                        
                                     </div>
                                 )}
                                 

@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 
 interface roomProps { 
   url : string,
-  roomName: string
+  roomName: string,
+  roomId: string
 }
 
 export default function PreStudio(){
     const [roomName, setRoomName] = useState<string>(`Test_Room${Date.now()}`);
     const [urls, setUrls] = useState<roomProps[]>([]);
+    const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
     const participantName = localStorage.getItem("participantName");
     const BackendUrl = import.meta.env.VITE_BACKEND_URL;
     const navigate = useNavigate();
@@ -47,14 +49,18 @@ export default function PreStudio(){
   
     },[]);
     
+    const handleSelectedRoom = (roomId: string) => {
+      setSelectedRoom(roomName);
+      navigate(`/preStudio/${roomId}`);
+    }
 
-    return <div className="  ">
+    return <div className="">
       <div  className="py-8 rounded-2xl px-4 text-center">
         <span className="mb-2 text-2xl ">Create a new Room</span>
         <div className="flex gap-4 justify-center">
           <Input type="text" onChange={(e) => setRoomName(e.target.value)} placeholder="RoomName" className="mt-2 w-fit"/>
           <span className="flex items-center justify-center ">
-            <Button onClick={joinAsCreator} className="mt-2 bg-cyan-300" > Join the room </Button>
+            <Button onClick={joinAsCreator} className="mt-2 bg-cyan-600" > Join the room </Button>
           </span>
 
         </div>
@@ -63,18 +69,17 @@ export default function PreStudio(){
       </div>
 
       <div>
-        <h1 className="text-2xl mb-4 px-4 text-cyan-200">Previous rooms</h1>
-        <div className="grid grid-cols-3 px-6">
-          {
+        <h1 className="text-2xl mb-4 px-4 text-[#39AAAA]">Previous rooms</h1>
+        {!selectedRoom && <div className="md:grid md:grid-cols-3 px-6 py-2">
+          { 
             urls.map((room) => 
-            <div className=""> 
-              <span className="text-xl  pb-10 ml-4 ">{room.roomName}</span>
-              <video src={room.url} controls className="w-full h-[300px] object-cover rounded-xl mt-2"/>
+            <div className="ml-4 border border-neutral-500 rounded-2xl mt-4"> 
+                <span className="text-xl  pb-10 ml-4 underline cursor-pointer" onClick={() => {handleSelectedRoom(room.roomId)}}>{room.roomName}</span>
+              <video src={room.url} controls className="w-full h-[250px] object-center rounded-xl mt-2 "/>
             </div>)
-            
           }
 
-        </div>
+        </div>}
         
 
       </div>

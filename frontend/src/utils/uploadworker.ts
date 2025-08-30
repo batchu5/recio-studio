@@ -53,7 +53,7 @@ export async function saveChunk(
       resolve(req.result as number);
     };
     req.onerror = () => reject(req.error);
-    tx.oncomplete = () => {}; // commit complete
+    tx.oncomplete = () => {}; 
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
   });
@@ -141,7 +141,6 @@ export async function startUploadWorker() {
 
   while (true) {
     console.log("worker is running");
-
     const chunkData = await getNextUnuploadedChunk();
     console.log("after reolveing the cursor", chunkData);
 
@@ -155,9 +154,9 @@ export async function startUploadWorker() {
       console.log("Uploading chunk", chunkData.id);
       await uploadChunkToBackend(chunkData); 
       await markChunkAsUploaded(chunkData.id);
-      console.log(`✅ Uploaded chunk ${chunkData.id}`);
+      console.log(`Uploaded chunk ${chunkData.id}`);
     } catch (err) {
-      console.error(`❌ Upload failed for chunk ${chunkData.id}, retrying in 5s...`, err);
+      console.error(` Upload failed for chunk ${chunkData.id}, retrying in 5s...`, err);
       await new Promise((r) => setTimeout(r, 5000));
     }
 
