@@ -19,10 +19,10 @@ export default function VideoComponent({track, participantIdentity,local = false
     }, [track]);
 
     return (
-        <div className="rounded-2xl ">
-            <video ref={videoElement} id={track.sid} className="rounded-2xl w-[300px] h-fit">
+        <div className="rounded-xl bg-blue-200  relative">
+            <video ref={videoElement} id={track.sid} className="rounded-2xl  h-fit">
             </video>
-            <span className="text-white bottom-2 left-2">{participantIdentity + (local ? " (You)" : "")}</span>
+            <span className="absolute text-white bottom-2 left-2 ">{participantIdentity + (local ? " (You)" : "")}</span>
         </div>
     )
 }

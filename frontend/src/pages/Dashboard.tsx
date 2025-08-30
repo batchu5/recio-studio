@@ -3,9 +3,10 @@ import {  RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublicati
 import {  useEffect, useRef, useState } from "react";
 import VideoComponent from "../components/videoComponent";
 import AudioComponent from "../components/AudioComponent";
-
+import {Disc2} from "lucide-react";
 import { checkStopWorker, saveChunk, startUploadWorker, } from "../utils/uploadworker";
 import {  useSearchParams } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 
 type Trackinfo = {
@@ -289,8 +290,9 @@ export default function Dashboard() {
                     </div>
                 </div>
             ) : (
-                <div className="h-screen ">
-                    <div className=" bg-amber-500 h-10/12 p-4   ">
+                <div className="h-screen">
+                    <div className=" h-10/12 p-4   ">
+                        <h2 className="text-2xl font-mono text-center">RoomName: {roomName}</h2>
                         <div className="grid grid-cols-3">
                             {localTrack && (
                                 <VideoComponent track={localTrack} participantIdentity={participantName || "Test User"} local={true} />
@@ -314,15 +316,17 @@ export default function Dashboard() {
                         
                     </div>
                     <div >
-                        <h2 >{roomName}</h2>
-                        <Button variant="destructive" onClick={leaveRoom}>
-                            Leave Room
-                        </Button>
-                        <div>
+                        
+                        
+                        <div className="flex gap-2 justify-center">
+                            <Button variant="destructive" onClick={leaveRoom} >
+                                Leave Room
+                            </Button>
                                 {
                                     role === "creator" &&  (
-                                    <div>
-                                        <Button onClick={startAllRecordings}>
+                                    <div className="flex gap-2">
+                                        <Button onClick={startAllRecordings} >
+                                            <Disc2 className="text-red-500"/>
                                             Start recording all
                                         </Button>
 
@@ -330,8 +334,6 @@ export default function Dashboard() {
                                             End recording all
                                         </Button>
 
-                                        <Button onClick={getUrl}>Get url</Button>
-                                        <Button onClick={getMergedUrl}>Get mergedUrl</Button>
                                     </div>
                                 )}
                                 
