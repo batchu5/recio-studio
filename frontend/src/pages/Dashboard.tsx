@@ -4,7 +4,7 @@ import {  useEffect, useRef, useState } from "react";
 import VideoComponent from "../components/videoComponent";
 import AudioComponent from "../components/AudioComponent";
 
-import { saveChunk, startUploadWorker } from "../utils/uploadworker";
+import { checkStopWorker, saveChunk, startUploadWorker, } from "../utils/uploadworker";
 import {  useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -27,7 +27,7 @@ export default function Dashboard() {
     const [searchParams] = useSearchParams();
     const token = searchParams.get("token");
     const role = searchParams.get("role");
-
+    
     const [recordingUrl, setRecordingUrl] = useState<string>("");
 
     const participantName = localStorage.getItem("participantName");
@@ -187,7 +187,7 @@ export default function Dashboard() {
 
     }
 
-    function stopLocalRecording() {
+    async function stopLocalRecording() {
         setIsRecordinStarted(false);
         Object.values(recorderMap.current).forEach((recorder) => {
         if (recorder.state !== "inactive") recorder.stop();
@@ -195,6 +195,17 @@ export default function Dashboard() {
         });
         recorderMap.current = {};
         console.log("🛑 Recording stopped for", participantName);
+        
+        while(true){
+            const isWorkerStopped = checkStopWorker();
+            if(isWorkerStopped){
+                console.log("stopworker is true from the dashboard stopLocalRecording so gonna call getUrl and getmergedurl");
+                await getUrl();
+                await getMergedUrl();
+                break;
+            }
+            await new Promise((r) => setTimeout(r, 1000));
+        }
     }
 
     function startRecording(videoTrack : VideoTrack | RemoteVideoTrack, audioTrack : AudioTrack | RemoteAudioTrack, participantName : string){
@@ -318,7 +329,8 @@ export default function Dashboard() {
                                             End recording all
                                         </Button>
 
-                                        
+                                        <Button onClick={getUrl}>Get url</Button>
+                                        <Button onClick={getMergedUrl}>Get mergedUrl</Button>
                                     </div>
                                 )}
                                 

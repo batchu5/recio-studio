@@ -5,6 +5,8 @@ const STORE_NAME = "chunks";
 const DB_VERSION = 1;
 let isUploading = 0;
 const BackenUrl = import.meta.env.VITE_BACKEND_URL;
+let count = 0;
+let stopWorker = false;
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -131,6 +133,10 @@ async function uploadChunkToBackend(chunkData: any) {
 
 }
 
+export function checkStopWorker(){
+  return stopWorker;
+}
+
 export async function startUploadWorker() {
   if (isUploading == 1) {
     console.log("isUploading is 1 bro")
@@ -144,23 +150,34 @@ export async function startUploadWorker() {
     const chunkData = await getNextUnuploadedChunk();
     console.log("after reolveing the cursor", chunkData);
 
-    if (!chunkData) {
+    if (!chunkData && count <= 5) {
+      count++;
+      console.log("count where count < 3", count);
       console.log("No chunk found, checking again in 1s...");
       await new Promise((r) => setTimeout(r, 1000));
       continue;
     }
 
+    if(!chunkData && count >= 6){
+        console.log("count where count > 3", count);
+        console.log("obviously you have stopped the recordin");
+        stopWorker = true;
+        break;
+    }
+
     try {
+      count = 0;
       console.log("Uploading chunk", chunkData.id);
+
+      if(!chunkData.id){continue}
       await uploadChunkToBackend(chunkData); 
       await markChunkAsUploaded(chunkData.id);
       console.log(`Uploaded chunk ${chunkData.id}`);
     } catch (err) {
-      console.error(` Upload failed for chunk ${chunkData.id}, retrying in 5s...`, err);
+      console.error(` Upload failed for chunk , retrying in 5s...`, err);
       await new Promise((r) => setTimeout(r, 5000));
     }
 
     await new Promise((r) => setTimeout(r, 1000));
   }
 }
-
