@@ -242,6 +242,7 @@ export default function Dashboard() {
                 }
             })
             setRecordingUrl(res.data.url);
+            console.log("recording url", recordingUrl);
         console.log(res.data);
         } catch (error) {
             console.log("error occured bhahu", error);
