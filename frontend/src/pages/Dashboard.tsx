@@ -202,7 +202,6 @@ export default function Dashboard() {
             if(isWorkerStopped){
                 console.log("stopworker is true from the dashboard stopLocalRecording so gonna call getUrl and getmergedurl");
                 await getUrl();
-                await getMergedUrl();
                 break;
             }
             await new Promise((r) => setTimeout(r, 1000));
@@ -244,7 +243,7 @@ export default function Dashboard() {
             })
             setRecordingUrl(res.data.url);
             console.log("recording url", recordingUrl);
-        console.log(res.data);
+             console.log(res.data);
         } catch (error) {
             console.log("error occured bhahu", error);
         }
@@ -253,7 +252,8 @@ export default function Dashboard() {
     async function getMergedUrl(){
         try {
             const sessionId = sessionIdRef.current;
-            const finalurl = await axios.post(`${BackendUrl}/api/get_merged_url`, {session_Id: sessionId});
+            
+            const finalurl = await axios.post(`${BackendUrl}/api/get_merged_url`, {session_Id: sessionId, urlF: "hi there"});
             console.log("finalurl from getMergedUrl", finalurl);
 
         } catch (error) {
