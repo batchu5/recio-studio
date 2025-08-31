@@ -1,5 +1,5 @@
 import axios from "axios";
-import {  RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, RemoteVideoTrack, Room, RoomEvent, type AudioTrack, type VideoTrack } from "livekit-client";
+import {  RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, RemoteVideoTrack, Room, RoomEvent, createLocalScreenTracks , LocalVideoTrack, type AudioTrack, type VideoTrack } from "livekit-client";
 import {  useEffect, useRef, useState } from "react";
 import VideoComponent from "../components/videoComponent";
 import AudioComponent from "../components/AudioComponent";
@@ -17,10 +17,10 @@ type Trackinfo = {
 export default function Dashboard() {
 
     const recorderMap = useRef<Record<string, MediaRecorder>>({});
-
+    const [screenTrack, setScreenTrack] = useState<LocalVideoTrack  | undefined>(undefined);
     const [room, setRoom] = useState<Room | undefined> (undefined);
     const [localTrack, setLocalTrack] = useState<VideoTrack | undefined>(undefined);
-
+    const videoRef = useRef<HTMLVideoElement | null>(null);
     const [remoteTracks, setRemoteTracks] = useState<Trackinfo[]>([]);
     const sessionIdRef = useRef<string| null>(""); 
     const RecordingRef = useRef<string | null>(null);
@@ -33,7 +33,39 @@ export default function Dashboard() {
     const participantName = localStorage.getItem("participantName");
     const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
     const roomName = localStorage.getItem("roomName")
+    const [hasPermission, setHasPermission] = useState<boolean>(false);
+    const [stream, setStream] = useState<MediaStream | null> (null);
     const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
+
+    async function toggleScreenShare() {
+        if (!room) return;
+
+        if (!screenTrack) {
+            try {
+            const tracks = await createLocalScreenTracks({
+                video: true,
+                audio: false, 
+            });
+            const screenVideoTrack = tracks.find((t) => t.kind === "video");
+            if (screenVideoTrack) {
+                await room.localParticipant.publishTrack(screenVideoTrack);
+                setScreenTrack(screenVideoTrack as LocalVideoTrack);
+                screenVideoTrack.mediaStreamTrack.onended = () => {
+                room.localParticipant.unpublishTrack(screenVideoTrack);
+                screenVideoTrack.stop();
+                setScreenTrack(undefined);
+                };
+            }
+            } catch (err) {
+            console.error("Error starting screen share:", err);
+            }
+        } else {
+            room.localParticipant.unpublishTrack(screenTrack);
+            screenTrack.stop();
+            setScreenTrack(undefined);
+        }
+    }
+
 
     useEffect(() => {
         console.log("role", role);
@@ -270,31 +302,55 @@ export default function Dashboard() {
         }
     }
 
+    async function enablePermission() {
+        try{
+            const userStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+            setStream(userStream);
+            if(videoRef.current){
+                videoRef.current.srcObject = stream
+            }
+            setHasPermission(true);
+
+        }catch(error){
+            console.log("error while setting up the permission", error)
+        } 
+    }
+
+    useEffect(() => {
+        if (videoRef.current && stream) {
+            videoRef.current.srcObject = stream;
+        }
+    }, [stream]);
+
+   
     return (
         <>
             {!room ? (
-                <div id="join">
-                    <div id="join-dialog">
-                        <h2>Join a Video Room</h2>
-                        <form
-                            onSubmit={(e) => {
-                                joinRoom();
-                                e.preventDefault();
-                            }}
-                        >
-                            <div>
-                              Participant:  {participantName}
-                                
+                <div className="h-screen flex items-center justify-center">
+                    <div className="bg-black p-4 flex">
+                        <div className="flex justify-center ">
+                            <div className="">
+                                <h1 className=" text-2xl ">Let's check your  Camera and mic...</h1>
+                                {!hasPermission 
+                                        ?(
+                                            <div className="flex justify-center mt-2">
+                                                <Button onClick={enablePermission} className="w-full">
+                                                    Click here to check
+                                                </Button>
+                                            </div>
+                                        )
+                                        : (<div className="flex justify-center">
+                                                <video ref={videoRef} autoPlay playsInline className="w-[200px] h-[160px] rounded-2xl "></video>
+                                           </div>)
+                                }
+                                <div className="flex justify-center mt-2">
+                                    <Button onClick={joinRoom} className="w-full">Join Room</Button>
+                                </div>
                             </div>
-                            
-                            <button
-                                className="btn btn-lg btn-success"
-                                type="submit"
-                                disabled={!roomName || !participantName}
-                            >
-                                Join!
-                            </button>
-                        </form>
+
+                        </div>
+                        
+                        
                     </div>
                 </div>
             ) : (
@@ -304,6 +360,14 @@ export default function Dashboard() {
                         <div className="grid grid-cols-3">
                             {localTrack && (
                                 <VideoComponent track={localTrack} participantIdentity={participantName || "Test User"} local={true} />
+                            )}
+
+                            {screenTrack && (
+                                <VideoComponent
+                                    track={screenTrack}
+                                    participantIdentity={`${participantName || "You"} (Screen)`}
+                                    local={true}
+                                />
                             )}
 
                             {remoteTracks.map((remoteTrack) =>
@@ -323,28 +387,28 @@ export default function Dashboard() {
                         </div>
                         
                     </div>
-                    <div >
-                        
-                        
+                    <div>
                         <div className="flex gap-2 justify-center">
                             <Button variant="destructive" onClick={leaveRoom} >
                                 Leave Room
                             </Button>
-                                {
-                                    role === "creator" &&  (
-                                    <div className="flex gap-2">
-                                        <Button onClick={startAllRecordings} >
-                                            <Disc2 className="text-red-500"/>
-                                            Start recording all
-                                        </Button>
+                            <Button onClick={toggleScreenShare}>
+                                {screenTrack ? "Stop Screen Share" : "Start Screen Share"}
+                            </Button>
 
-                                        <Button onClick={stopAllRecordings}>
-                                            End recording all
-                                        </Button>
+                            {
+                                role === "creator" &&  (
+                                <div className="flex gap-2">
+                                    <Button onClick={startAllRecordings} >
+                                        <Disc2 className="text-red-500"/>
+                                        Start recording all
+                                    </Button>
 
-                                    </div>
-                                )}
-                                
+                                    <Button onClick={stopAllRecordings}>
+                                        End recording all
+                                    </Button>
+                                </div>
+                            )} 
                         </div>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Plus } from "lucide-react";
 
 interface roomProps { 
   url : string,
@@ -58,14 +59,12 @@ export default function PreStudio(){
       <div  className="py-8 rounded-2xl px-4 text-center">
         <span className="mb-2 text-2xl ">Create a new Room</span>
         <div className="flex gap-4 justify-center">
-          <Input type="text" onChange={(e) => setRoomName(e.target.value)} placeholder="RoomName" className="mt-2 w-fit"/>
+          <Input type="text" onChange={(e) => setRoomName(e.target.value)} placeholder="Enter the RoomName" className="mt-2 w-fit"/>
           <span className="flex items-center justify-center ">
-            <Button onClick={joinAsCreator} className="mt-2 bg-cyan-600" > Join the room </Button>
+            <Button onClick={joinAsCreator} className="mt-2 bg-cyan-600"> <Plus  className=" size-6"/> Create the room </Button>
           </span>
 
         </div>
-        
-
       </div>
 
       <div>
@@ -74,8 +73,8 @@ export default function PreStudio(){
           { 
             urls.map((room) => 
             <div className="ml-4 border border-neutral-500 rounded-2xl mt-4"> 
-                <span className="text-xl  pb-10 ml-4 underline cursor-pointer" onClick={() => {handleSelectedRoom(room.roomId)}}>{room.roomName}</span>
-              <video src={room.url} controls className="w-full h-[250px] object-center rounded-xl mt-2 "/>
+                <span className="text-xl px-2 pt-2 underline cursor-pointer flex items-start justify-start" onClick={() => {handleSelectedRoom(room.roomId)}}>{room.roomName}</span>
+              <video src={room.url} controls className="w-full h-[250px] object-center rounded-xl "/>
             </div>)
           }
 

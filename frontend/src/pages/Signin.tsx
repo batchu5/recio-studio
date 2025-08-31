@@ -38,10 +38,10 @@ export default function Signin() {
 
   return (
     <div className="h-screen w-screen flex justify-center items-center ">
-      <div className="rounded-xl  bg-linear-to-tr from-70% from-black to-cyan-300 pt-[0.5px] pr-[0.5px]">
-        <div className="rounded-xl  bg-linear-to-bl from-70% from-black to-cyan-300 pl-[0.5px] pb-[0.5px]">
+      <div className="rounded-xl w-[252px] bg-linear-to-tr from-70% from-black to-cyan-300  h-[250px]">
+        <div className="rounded-xl  w-[251px] bg-linear-to-bl from-70% from-black to-cyan-300 h-[249px] mt-[1px] mr-[1px]">
 
-        <div className="px-8 py-8 rounded-xl bg-black">
+        <div className="px-8 py-8 rounded-xl bg-black w-[250px] h-[248px] ml-[1px] mb-[1px]">
           <div className="">
           <h1 className="text-2xl text-center font-bold">Welcome back</h1>
           <h3 className="mb-6 text-neutral-400">Login to your account to continue</h3>
@@ -76,7 +76,7 @@ export default function Signin() {
         </div>
 
       </div>
-    </div>
+     </div>
 
   );
 }
