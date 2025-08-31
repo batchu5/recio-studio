@@ -28,8 +28,7 @@ export default function Dashboard() {
     const [searchParams] = useSearchParams();
     const token = searchParams.get("token");
     const role = searchParams.get("role");
-    
-    const [recordingUrl, setRecordingUrl] = useState<string>("");
+    const [urls, setUrls] = useState<string[]>([]);
 
     const participantName = localStorage.getItem("participantName");
     const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
@@ -241,9 +240,9 @@ export default function Dashboard() {
                     "Content-Type": "application/json"
                 }
             })
-            setRecordingUrl(res.data.url);
-            console.log("recording url", recordingUrl);
-             console.log(res.data);
+            
+            console.log(res.data);
+            setUrls(res.data.urls);
         } catch (error) {
             console.log("error occured bhahu", error);
         }
@@ -252,14 +251,18 @@ export default function Dashboard() {
     async function getMergedUrl(){
         try {
             const sessionId = sessionIdRef.current;
+
+            if(urls.length == 0){
+                console.log("urls length is 0 bro check it out");
+                return;
+            }
             
-            const finalurl = await axios.post(`${BackendUrl}/api/get_merged_url`, {session_Id: sessionId, urlF: "hi there"});
+            const finalurl = await axios.post(`${BackendUrl}/api/get_merged_url`, {session_Id: sessionId, urlF: urls});
             console.log("finalurl from getMergedUrl", finalurl);
 
         } catch (error) {
             console.log("error from the getMergedUrl", error);
         }
-        
     }
 
     return (
