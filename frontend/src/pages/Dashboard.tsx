@@ -28,7 +28,7 @@ export default function Dashboard() {
     const [searchParams] = useSearchParams();
     const token = searchParams.get("token");
     const role = searchParams.get("role");
-    const [urls, setUrls] = useState<string[]>([]);
+    const urlsRef = useRef<string[] | null>([]);
 
     const participantName = localStorage.getItem("participantName");
     const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
@@ -40,8 +40,7 @@ export default function Dashboard() {
     })
 
     async function leaveRoom() {
-            await getUrl();
-            await getMergedUrl();
+            
             await room?.disconnect();
 
             setRoom(undefined);
@@ -201,6 +200,12 @@ export default function Dashboard() {
             if(isWorkerStopped){
                 console.log("stopworker is true from the dashboard stopLocalRecording so gonna call getUrl and getmergedurl");
                 await getUrl();
+
+                if(!urlsRef.current ){
+                    console.log("urlsref is nuill");
+                    return;
+                }
+                await getMergedUrl(urlsRef.current);
                 break;
             }
             await new Promise((r) => setTimeout(r, 1000));
@@ -242,13 +247,13 @@ export default function Dashboard() {
             })
             
             console.log(res.data);
-            setUrls(res.data.urls);
+            urlsRef.current = res.data.urls;
         } catch (error) {
             console.log("error occured bhahu", error);
         }
     }
 
-    async function getMergedUrl(){
+    async function getMergedUrl(urls: string[]){
         try {
             const sessionId = sessionIdRef.current;
 
