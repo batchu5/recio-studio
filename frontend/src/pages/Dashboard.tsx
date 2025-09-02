@@ -8,7 +8,7 @@ import { checkStopWorker, saveChunk, startUploadWorker, } from "../utils/uploadw
 import {  useSearchParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilState, useSetRecoilState } from "recoil";
 import { screenShareAtom } from "@/atoms/screenShared";
 
 type Trackinfo = {
