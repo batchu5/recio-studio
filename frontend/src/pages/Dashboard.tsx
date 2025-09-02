@@ -8,7 +8,7 @@ import { checkStopWorker, saveChunk, startUploadWorker, } from "../utils/uploadw
 import {  useSearchParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import { useRecoilState, useSetRecoilState } from "recoil";
+import { useRecoilState } from "recoil";
 import { screenShareAtom } from "@/atoms/screenShared";
 
 type Trackinfo = {
@@ -38,46 +38,31 @@ export default function Dashboard() {
     const [hasPermission, setHasPermission] = useState<boolean>(false);
     const [stream, setStream] = useState<MediaStream | null> (null);
     const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
-    // const shareScreen = useRecoilValue(screenShareAtom);
-    const setShareScreen = useSetRecoilState(screenShareAtom);
+    const [isScreenSharedByOthers, setIsScreenSharedByOthers] = useState<boolean>(false);
+   
 
     const screenShare = useRecoilState(screenShareAtom);
     useEffect(() => {
         console.log("screenShare", screenShare);
     })
 
-    const updateScreenShare = (value: boolean) => {
-        const userId = localStorage.getItem('userId');
-        if(value == true){
-            setShareScreen((prev) =>
-                prev.map((user) =>
-                    user.userId === userId
-                    ? { ...user, isScreenShare: value }
-                    : {...user, isScreenShare: false }
-                )
-            );
-            toggleScreenShare();
-        }else{
-            setShareScreen((prev) =>
-                prev.map((user) =>
-                    user.userId === userId
-                    ? { ...user, isScreenShare: false }
-                    : {...user, isScreenShare: false }
-                )
-            );
-            toggleScreenShare();
-        }  
-    };
+    async function handleStopScreenShare(){
+        if(screenTrack && room){
+            room.localParticipant.unpublishTrack(screenTrack);
+            screenTrack.stop();
+            setScreenTrack(undefined);
 
-    const checkScreenShare = () => {
-        //@ts-ignore
-        return screenShare.some((user) => user.isScreenShare === true);
-    };
+            room.localParticipant.publishData(
+                    new TextEncoder().encode(JSON.stringify({ action: "StopscreenSharedByOtherUser" })),
+                    { reliable: true }
+            );
+        }
+    }
 
-    async function toggleScreenShare() {
+    async function handleScreenShare() {
         if (!room) return;
 
-        if (!screenTrack && !checkScreenShare()) {  
+        if (!screenTrack) {  
             try {
                 const tracks = await createLocalScreenTracks({
                     video: true,
@@ -90,32 +75,26 @@ export default function Dashboard() {
                     setScreenTrack(screenVideoTrack as LocalVideoTrack);
 
                     screenVideoTrack.mediaStreamTrack.onended = () => {
-                    room.localParticipant.unpublishTrack(screenVideoTrack);
-                    screenVideoTrack.stop();
-                    setScreenTrack(undefined);
+                        room.localParticipant.unpublishTrack(screenVideoTrack);
+                        screenVideoTrack.stop();
+                        setScreenTrack(undefined);
                     };
                 }
 
-                const userId = localStorage.getItem("userId");
-                if (!userId) {
-                    console.log("userId is empty from toggleScreenShare");
-                    return;
-                }
+                room.localParticipant.publishData(
+                    new TextEncoder().encode(JSON.stringify({ action: "screenSharedByOtherUser" })),
+                    { reliable: true }
+                );
+
             }catch(error){
-                console.log("finding the error in toggleScreenShare", error);
+                console.log("finding the error in handleScreenShare", error);
             }
         } else {
                 if(screenTrack){
-                    room.localParticipant.unpublishTrack(screenTrack);
-                    screenTrack.stop();
-                    setScreenTrack(undefined);
-
-                }
-                
-            
+                    
+                } 
         }
     }
-
 
     useEffect(() => {
         console.log("role", role);
@@ -190,8 +169,12 @@ export default function Dashboard() {
                         startLocalRecording(room);
                     }
                 }
-                if (msg.action === "stopRecording") {
+                else if (msg.action === "stopRecording") {
                     stopLocalRecording();
+                }else if(msg.action === "screenSharedByOtherUser"){
+                    setIsScreenSharedByOthers(true);
+                }else if(msg.action === "StopscreenSharedByOtherUser"){
+                    setIsScreenSharedByOthers(false);
                 }
             } catch (err) {
                 console.error("Bad data message", err);
@@ -446,8 +429,12 @@ export default function Dashboard() {
                             <Button variant="destructive" onClick={leaveRoom} >
                                 Leave Room
                             </Button>
-                            <Button onClick={() => {screenTrack ? updateScreenShare(true) : updateScreenShare(false)}}>
-                                {screenTrack ? "Stop Screen Share" : "Start Screen Share"}
+                            <Button disabled={isScreenSharedByOthers} onClick={handleScreenShare}>
+                                StartScreenShare
+                            </Button>
+
+                            <Button disabled={isScreenSharedByOthers} onClick={handleStopScreenShare}>
+                                StopScreenShare
                             </Button>
 
                             {
