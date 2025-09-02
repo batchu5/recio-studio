@@ -17,7 +17,7 @@ export default function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${BackendUrl}/signin`, {
+      const response = await axios.post(`${BackendUrl}/signup`, {
         email,
         password,
       });

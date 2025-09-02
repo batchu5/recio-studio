@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { screenShareAtom } from "@/atoms/screenShared";
 
 interface roomProps { 
   url : string,
@@ -16,6 +18,8 @@ export default function PreStudio(){
     const [roomName, setRoomName] = useState<string>(`Test_Room${Date.now()}`);
     const [urls, setUrls] = useState<roomProps[]>([]);
     const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+    const screenShare = useRecoilValue(screenShareAtom);
+    const setScreenShare = useSetRecoilState(screenShareAtom);
     const participantName = localStorage.getItem("participantName");
     const BackendUrl = import.meta.env.VITE_BACKEND_URL;
     const navigate = useNavigate();
@@ -31,6 +35,12 @@ export default function PreStudio(){
       const shareLink = `${window.location.origin}/join/${room.name}`;
       localStorage.setItem("roomName", room.name);
       localStorage.setItem("roomId", room.id);
+      setScreenShare((prev) => [
+            ...prev,
+            { userId: localStorage.getItem("userId") || "", isScreenShare: false }
+      ]);
+      console.log(screenShare);
+
       navigate(`/dashboard?token=${token}&role=creator`);
     
       console.log("Share this link with guests:", shareLink);

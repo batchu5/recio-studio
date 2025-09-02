@@ -8,14 +8,16 @@ import { checkStopWorker, saveChunk, startUploadWorker, } from "../utils/uploadw
 import {  useSearchParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import { useRecoilState } from "recoil";
+import { screenShareAtom } from "@/atoms/screenShared";
 
 type Trackinfo = {
   trackPublications : RemoteTrackPublication,
   participantIdentity : string,
 }
 
-export default function Dashboard() {
 
+export default function Dashboard() {
     const recorderMap = useRef<Record<string, MediaRecorder>>({});
     const [screenTrack, setScreenTrack] = useState<LocalVideoTrack  | undefined>(undefined);
     const [room, setRoom] = useState<Room | undefined> (undefined);
@@ -36,6 +38,11 @@ export default function Dashboard() {
     const [hasPermission, setHasPermission] = useState<boolean>(false);
     const [stream, setStream] = useState<MediaStream | null> (null);
     const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
+
+    const screenShare = useRecoilState(screenShareAtom);
+    useEffect(() => {
+        console.log("screenShare", screenShare);
+    })
 
     async function toggleScreenShare() {
         if (!room) return;
@@ -65,7 +72,6 @@ export default function Dashboard() {
             setScreenTrack(undefined);
         }
     }
-
 
     useEffect(() => {
         console.log("role", role);
@@ -191,7 +197,7 @@ export default function Dashboard() {
         stopLocalRecording();
     }
 
-    function startLocalRecording(currentRoom: Room) {
+function startLocalRecording(currentRoom: Room) {
         console.log("starting the recording");
         if (!currentRoom) {
             console.log("Room is empty");
@@ -214,6 +220,11 @@ export default function Dashboard() {
 
         if (localVideoTrack || localAudioTrack) {
             recorderMap.current[identity] = startRecording(localVideoTrack, localAudioTrack, identity);
+        }
+
+        if (screenTrack) {
+            const screenIdentity = `${identity}-screen`;
+            recorderMap.current[screenIdentity] = startRecording(screenTrack, localAudioTrack, screenIdentity);
         }
 
     }
@@ -258,7 +269,7 @@ export default function Dashboard() {
             const recorder = new MediaRecorder(stream, {"mimeType" : "video/webm; codecs=vp8,opus"})
             recorder.ondataavailable = async (event) => {
                 if (event.data.size > 0 && sessionIdRef.current) {
-                    const blob = event.data;
+                        const blob = event.data;
                         await saveChunk(sessionIdRef.current, participantName, blob);
                     }
                 };
@@ -392,7 +403,7 @@ export default function Dashboard() {
                             <Button variant="destructive" onClick={leaveRoom} >
                                 Leave Room
                             </Button>
-                            <Button onClick={toggleScreenShare}>
+                            <Button onClick={toggleScreenShare} >
                                 {screenTrack ? "Stop Screen Share" : "Start Screen Share"}
                             </Button>
 
