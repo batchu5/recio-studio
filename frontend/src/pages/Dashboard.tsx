@@ -8,7 +8,7 @@ import { checkStopWorker, saveChunk, startUploadWorker, } from "../utils/uploadw
 import {  useSearchParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import { useRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { screenShareAtom } from "@/atoms/screenShared";
 
 type Trackinfo = {
@@ -38,33 +38,59 @@ export default function Dashboard() {
     const [hasPermission, setHasPermission] = useState<boolean>(false);
     const [stream, setStream] = useState<MediaStream | null> (null);
     const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
+    const shareScreen = useRecoilValue(screenShareAtom);
+    const setShareScreen = useSetRecoilState(screenShareAtom);
 
     const screenShare = useRecoilState(screenShareAtom);
     useEffect(() => {
         console.log("screenShare", screenShare);
     })
 
+    const updateScreenShare = (userId: string, value: boolean) => {
+        setShareScreen((prev) =>
+            prev.map((user) =>
+                user.userId === userId
+                ? { ...user, isScreenShare: value }
+                : user
+            )
+        );
+    };
+    const checkScreenShare = () => {
+        //@ts-ignore
+        return screenShare.some((user) => user.isScreenShare === true);
+    };
+
     async function toggleScreenShare() {
         if (!room) return;
 
         if (!screenTrack) {
             try {
-            const tracks = await createLocalScreenTracks({
-                video: true,
-                audio: false, 
-            });
-            const screenVideoTrack = tracks.find((t) => t.kind === "video");
-            if (screenVideoTrack) {
-                await room.localParticipant.publishTrack(screenVideoTrack);
-                setScreenTrack(screenVideoTrack as LocalVideoTrack);
-                screenVideoTrack.mediaStreamTrack.onended = () => {
-                room.localParticipant.unpublishTrack(screenVideoTrack);
-                screenVideoTrack.stop();
-                setScreenTrack(undefined);
-                };
-            }
+                const tracks = await createLocalScreenTracks({
+                    video: true,
+                    audio: false, 
+                });
+                const screenVideoTrack = tracks.find((t) => t.kind === "video");
+                if (screenVideoTrack) {
+                    await room.localParticipant.publishTrack(screenVideoTrack);
+                    setScreenTrack(screenVideoTrack as LocalVideoTrack);
+                    screenVideoTrack.mediaStreamTrack.onended = () => {
+                    room.localParticipant.unpublishTrack(screenVideoTrack);
+                    screenVideoTrack.stop();
+                    setScreenTrack(undefined);
+                    };
+                }
+                const userId = localStorage.getItem("userId");
+                if(!userId){
+                    console.log("userId is empty from toggleScreenShare");
+                    return;
+                }
+
+                if(!checkScreenShare){
+                    updateScreenShare(userId , true);
+                }
+                
             } catch (err) {
-            console.error("Error starting screen share:", err);
+                console.error("Error starting screen share:", err);
             }
         } else {
             room.localParticipant.unpublishTrack(screenTrack);
@@ -90,7 +116,6 @@ export default function Dashboard() {
 
         sessionIdRef.current = localStorage.getItem("roomId") ;
         const room = new Room();
-
         setRoom(room);
         room.on(
             RoomEvent.TrackSubscribed,
@@ -197,7 +222,7 @@ export default function Dashboard() {
         stopLocalRecording();
     }
 
-function startLocalRecording(currentRoom: Room) {
+    function startLocalRecording(currentRoom: Room) {
         console.log("starting the recording");
         if (!currentRoom) {
             console.log("Room is empty");
@@ -403,7 +428,7 @@ function startLocalRecording(currentRoom: Room) {
                             <Button variant="destructive" onClick={leaveRoom} >
                                 Leave Room
                             </Button>
-                            <Button onClick={toggleScreenShare} >
+                            <Button onClick={toggleScreenShare}  >
                                 {screenTrack ? "Stop Screen Share" : "Start Screen Share"}
                             </Button>
 

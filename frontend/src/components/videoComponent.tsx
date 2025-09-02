@@ -20,7 +20,7 @@ export default function VideoComponent({track, participantIdentity,local = false
 
     return (
         <div className="rounded-xl bg-blue-200  relative">
-            <video ref={videoElement} id={track.sid} className="rounded-2xl  h-fit">
+            <video ref={videoElement} id={track.sid} className="rounded-2xl h-[300px]">
             </video>
             <span className="absolute text-white bottom-2 left-2 ">{participantIdentity + (local ? " (You)" : "")}</span>
         </div>
