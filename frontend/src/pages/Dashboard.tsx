@@ -46,15 +46,29 @@ export default function Dashboard() {
         console.log("screenShare", screenShare);
     })
 
-    const updateScreenShare = (userId: string, value: boolean) => {
-        setShareScreen((prev) =>
-            prev.map((user) =>
-                user.userId === userId
-                ? { ...user, isScreenShare: value }
-                : user
-            )
-        );
+    const updateScreenShare = (value: boolean) => {
+        const userId = localStorage.getItem('userId');
+        if(value == true){
+            setShareScreen((prev) =>
+                prev.map((user) =>
+                    user.userId === userId
+                    ? { ...user, isScreenShare: value }
+                    : {...user, isScreenShare: false }
+                )
+            );
+            toggleScreenShare();
+        }else{
+            setShareScreen((prev) =>
+                prev.map((user) =>
+                    user.userId === userId
+                    ? { ...user, isScreenShare: false }
+                    : {...user, isScreenShare: false }
+                )
+            );
+            toggleScreenShare();
+        }  
     };
+
     const checkScreenShare = () => {
         //@ts-ignore
         return screenShare.some((user) => user.isScreenShare === true);
@@ -63,41 +77,45 @@ export default function Dashboard() {
     async function toggleScreenShare() {
         if (!room) return;
 
-        if (!screenTrack) {
+        if (!screenTrack && !checkScreenShare()) {  
             try {
                 const tracks = await createLocalScreenTracks({
                     video: true,
-                    audio: false, 
+                    audio: false,
                 });
+
                 const screenVideoTrack = tracks.find((t) => t.kind === "video");
                 if (screenVideoTrack) {
                     await room.localParticipant.publishTrack(screenVideoTrack);
                     setScreenTrack(screenVideoTrack as LocalVideoTrack);
+
                     screenVideoTrack.mediaStreamTrack.onended = () => {
                     room.localParticipant.unpublishTrack(screenVideoTrack);
                     screenVideoTrack.stop();
                     setScreenTrack(undefined);
                     };
                 }
+
                 const userId = localStorage.getItem("userId");
-                if(!userId){
+                if (!userId) {
                     console.log("userId is empty from toggleScreenShare");
                     return;
                 }
-
-                if(!checkScreenShare){
-                    updateScreenShare(userId , true);
-                }
-                
-            } catch (err) {
-                console.error("Error starting screen share:", err);
+            }catch(error){
+                console.log("finding the error in toggleScreenShare", error);
             }
         } else {
-            room.localParticipant.unpublishTrack(screenTrack);
-            screenTrack.stop();
-            setScreenTrack(undefined);
+                if(screenTrack){
+                    room.localParticipant.unpublishTrack(screenTrack);
+                    screenTrack.stop();
+                    setScreenTrack(undefined);
+
+                }
+                
+            
         }
     }
+
 
     useEffect(() => {
         console.log("role", role);
@@ -428,7 +446,7 @@ export default function Dashboard() {
                             <Button variant="destructive" onClick={leaveRoom} >
                                 Leave Room
                             </Button>
-                            <Button onClick={toggleScreenShare}  >
+                            <Button onClick={() => {screenTrack ? updateScreenShare(true) : updateScreenShare(false)}}>
                                 {screenTrack ? "Stop Screen Share" : "Start Screen Share"}
                             </Button>
 
