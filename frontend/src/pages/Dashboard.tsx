@@ -38,7 +38,7 @@ export default function Dashboard() {
     const [hasPermission, setHasPermission] = useState<boolean>(false);
     const [stream, setStream] = useState<MediaStream | null> (null);
     const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
-    const shareScreen = useRecoilValue(screenShareAtom);
+    // const shareScreen = useRecoilValue(screenShareAtom);
     const setShareScreen = useSetRecoilState(screenShareAtom);
 
     const screenShare = useRecoilState(screenShareAtom);
