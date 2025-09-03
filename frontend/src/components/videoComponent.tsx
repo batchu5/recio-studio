@@ -14,15 +14,16 @@ export default function VideoComponent({track, participantIdentity,local = false
             track.attach(videoElement.current);
         }
         return () => {
-            track.detach();
+            if(videoElement.current){
+                track.detach(videoElement.current);
+            }
         }
     }, [track]);
 
     return (
-        <div className="rounded-xl bg-blue-200  relative">
-            <video ref={videoElement} id={track.sid} className="rounded-2xl max-h-[300px]">
-            </video>
-            <span className="absolute text-white bottom-2 left-2 ">{participantIdentity + (local ? " (You)" : "")}</span>
+        <div className="relative rounded-xl bg-neutral-300 overflow-hidden">
+            <video ref={videoElement} id={track.sid} className="rounded-2xl"/>
+            <span className="absolute text-white bottom-2 left-2 bg-black/50 px-2 py-1 rounded">{participantIdentity + (local ? " (You)" : "")}</span>
         </div>
     )
 }

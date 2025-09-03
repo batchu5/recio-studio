@@ -31,8 +31,7 @@ export default function SelfRecording() {
           console.log("sessionIdRef is null");
           return;
         }
-        await saveChunk(sessionIdRef.current, "123", e.data);
-    
+        await saveChunk(sessionIdRef.current, "123", e.data, "camera");
         
       }
     };

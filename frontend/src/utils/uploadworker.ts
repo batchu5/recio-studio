@@ -38,26 +38,28 @@ function openDB(): Promise<IDBDatabase> {
 export async function saveChunk(
   session_id: string,
   participant_id: string,
-  blob: Blob
+  blob: Blob,
+  type: "screenShare" | "camera"
 ): Promise<number> {
-  const db = await openDB();
-  return new Promise<number>((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
-    const req = store.add({
-      session_id,
-      participant_id,
-      blob,
-      uploaded: 0
-    });
+    const db = await openDB();
+    return new Promise<number>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.add({
+        session_id,
+        participant_id,
+        blob,
+        type,
+        uploaded: 0
+      });
 
-    req.onsuccess = () => {
-      resolve(req.result as number);
-    };
-    req.onerror = () => reject(req.error);
-    tx.oncomplete = () => {}; 
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
+      req.onsuccess = () => {
+        resolve(req.result as number);
+      };
+      req.onerror = () => reject(req.error);
+      tx.oncomplete = () => {}; 
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
   });
 }
 
@@ -111,17 +113,16 @@ async function markChunkAsUploaded(id: number): Promise<void> {
 }
 
 async function uploadChunkToBackend(chunkData: any) {
-
     if(!chunkData){
         console.log("chunkData is empty while uploading the chunk to the backend");
         return;
     }
-
     const formData = new FormData();
     formData.append("blob", chunkData.blob, `chunk_${chunkData.id}.webm`); 
     formData.append("session_id", chunkData.session_id);
     formData.append("participant_id", chunkData.participant_id);
     formData.append("chunk_index", String(chunkData.id));
+    formData.append("type", String(chunkData.type));
 
     console.log("sending the data to the backend");
 

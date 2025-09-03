@@ -25,13 +25,12 @@ export default function UniqueRoom(){
         fetchusers()
     },[])
 
-    const handleDownloadUrl = async (roomId: string, userId: string, type: string) => {
+    const handleDownloadUrl = async (roomId: string, userId: string | null, type: string) => {
         try {
-            
             const res = await axios.post(`${BackendUrl}/fetch_url_by_userId_roomId_type`, {
-            roomId,
-            userId,
-            type,
+                roomId,
+                userId,
+                type
             });
 
             const fileUrl = res.data.url; 
@@ -58,14 +57,25 @@ export default function UniqueRoom(){
                 {users.map((user) => (
                     <div key={user.id} className="p-4 m-2 border border-neutral-800 rounded-2xl w-full  flex justify-between">
                         <div>Track of {user.email.replace("@gmail.com", "")}</div>
-                        <Button className="cursor-pointer" onClick={() => handleDownloadUrl(roomId as string, user.id, "individual")}>Download</Button>                 
+                        <Button className="cursor-pointer" onClick={() => handleDownloadUrl(roomId as string, user.id, "individual" )}>Download</Button>                 
+                    </div>
+                ))}
+
+                {users.map((user) => (
+                    <div key={user.id} className="p-4 m-2 border border-neutral-800 rounded-2xl w-full  flex justify-between">
+                        <div>ScreenShare Track of {user.email.replace("@gmail.com", "")}</div>
+                        <Button className="cursor-pointer" onClick={() => handleDownloadUrl(roomId as string, user.id, "individual-screen" )}>Download</Button>                 
                     </div>
                 ))}
 
                 <div className="p-4 m-2 border border-neutral-800 rounded-2xl w-full cursor-pointer flex justify-between">
                     <div>Download mixed url</div>
-                    <Button className="cursor-pointer">Download</Button>                 
+                    <Button className="cursor-pointer" onClick={() => handleDownloadUrl(roomId as string, null, "mixed")}>Download</Button>                 
                 </div>
+
+                
+
+                
             </div>
         }
         
