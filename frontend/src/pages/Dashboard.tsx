@@ -33,8 +33,8 @@ export default function Dashboard() {
     const participantName = localStorage.getItem("participantName");
     const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
     const roomName = localStorage.getItem("roomName")
-    const [rows, setRows] = useState<number>(0);
-    const [cols, setCols] = useState<number>(0);
+    const [rows, setRows] = useState<number>(1);
+    const [cols, setCols] = useState<number>(1);
     const [hasPermission, setHasPermission] = useState<boolean>(false);
     const [stream, setStream] = useState<MediaStream | null>(null);
     const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
@@ -66,10 +66,12 @@ export default function Dashboard() {
             gridCols = Math.max(rows, cols);
             gridRows = Math.ceil(n / rows);
         }
+
+        console.log("gridRows", gridRows);
+        console.log("gridCols", gridCols);
         setRows(gridRows);
         setCols(gridCols);
     }
-
 
     useEffect(() => {
         let count = localTrack ? 1 : 0 + (screenTrack ? 1 : 0) + remoteTracks.filter(rt => rt.trackPublications.kind === "video").length;
@@ -463,13 +465,15 @@ export default function Dashboard() {
                                 </div>
                             </div>
                         ) : (
-                            <div
-                                className="grid gap-4 w-full h-full bg-red-400"
-                                style={{
-                                    gridTemplateColumns: cols,
-                                    gridTemplateRows: rows
-                                }}
-                            >
+
+                            <div className="h-full bg-amber-500">
+                                <div
+                                    className="grid gap-4 w-full h-full bg-red-400"
+                                    style={{
+                                        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                                        gridTemplateRows: `repeat(${rows}, 1fr)`
+                                    }}
+                                >
                                 {localTrack && (
                                     <VideoComponent
                                         track={localTrack}
@@ -492,6 +496,9 @@ export default function Dashboard() {
                                     )
                                 )}
                             </div>
+
+                            </div>
+                           
                         )}
                     </main>
                     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-blue-600 px-4 py-2 rounded-2xl shadow-lg">
