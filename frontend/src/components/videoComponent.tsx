@@ -21,8 +21,8 @@ export default function VideoComponent({track, participantIdentity,local = false
     }, [track]);
 
     return (
-        <div className="relative rounded-xl bg-neutral-300 overflow-hidden">
-            <video ref={videoElement} id={track.sid} className="rounded-2xl w-full h-full"/>
+        <div className="relative rounded-xl h-full">
+            <video ref={videoElement} id={track.sid} className="rounded-2xl h-full w-full"/>
             <span className="absolute text-white bottom-2 left-2 bg-black/50 px-2 py-1 rounded">{participantIdentity + (local ? " (You)" : "")}</span>
         </div>
     )

@@ -2,7 +2,6 @@ import axios from "axios";
 import { RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, RemoteVideoTrack, Room, RoomEvent, createLocalScreenTracks, LocalVideoTrack, type AudioTrack, type VideoTrack } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
 import VideoComponent from "../components/videoComponent";
-import AudioComponent from "../components/AudioComponent";
 import { Disc2 } from "lucide-react";
 import { checkStopWorker, saveChunk, startUploadWorker, } from "../utils/uploadworker";
 import { useSearchParams } from "react-router-dom";
@@ -39,7 +38,7 @@ export default function Dashboard() {
     const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
     const [isScreenSharedByOthers, setIsScreenSharedByOthers] = useState<boolean>(false);
 
-    const [participantCount, setParticipantCount] = useState<number>(0);
+    const participantCount = useRef<number>(0);
   
 
     async function handleStopScreenShare() {
@@ -61,9 +60,6 @@ export default function Dashboard() {
             setCols(2);
             return;
         }
-
-
-
         let gridCols = Math.ceil(Math.sqrt(n));
         let gridRows = Math.ceil(n / cols);
         if (containerWidth > containerHeight) {
@@ -82,10 +78,12 @@ export default function Dashboard() {
     }
 
     useEffect(() => {
-        let count = localTrack ? 1 : 0 + (screenTrack ? 1 : 0) + remoteTracks.filter(rt => rt.trackPublications.kind === "video").length;
-        setParticipantCount(count);
+        let count = (localTrack ? 1 : 0) + (screenTrack ? 1 : 0) +
+            remoteTracks.filter(rt => rt.trackPublications.kind === "video").length;
+
+        console.log("participant Count is changed")
         calculateGrid(count, window.innerWidth, window.innerHeight);
-    }, [participantCount])
+    }, [participantCount, remoteTracks, localTrack])
 
     async function handleScreenShare() {
         if (!room) return;
@@ -158,10 +156,10 @@ export default function Dashboard() {
     }
 
     async function joinRoom() {
-
         sessionIdRef.current = localStorage.getItem("roomId");
         const room = new Room();
         setRoom(room);
+
         room.on(
             RoomEvent.TrackSubscribed,
             (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
@@ -238,6 +236,7 @@ export default function Dashboard() {
             await room.connect(LIVEKIT_URL, token);
             await room.localParticipant.enableCameraAndMicrophone();
             setLocalTrack(room.localParticipant.videoTrackPublications.values().next().value?.videoTrack);
+            participantCount.current = participantCount.current + 1;
             return room;
 
         } catch (error) {
@@ -438,8 +437,8 @@ export default function Dashboard() {
                     </div>
                 </div>
             ) : (
-                <div className="flex flex-col h-screen">
-                    <main className="flex-1 overflow-hidden">
+                <div className="">
+                    <main className="">
                         {screenTrack ? (
                             <div className="flex h-full bg-amber-500">
                                 <div className="flex-1 bg-red-600 rounded-lg overflow-hidden">
@@ -465,32 +464,21 @@ export default function Dashboard() {
                                                 participantIdentity={remoteTrack.participantIdentity}
                                             />
                                         ) : (
-                                            <AudioComponent
-                                                key={remoteTrack.trackPublications.trackSid}
-                                                track={remoteTrack.trackPublications.audioTrack!}
-                                            />
+                                            // <AudioComponent
+                                            //     key={remoteTrack.trackPublications.trackSid}
+                                            //     track={remoteTrack.trackPublications.audioTrack!}
+                                            //     participantIdentity={remoteTrack.participantIdentity}
+                                            // />
+                                            <div> Hello</div>
+                                        
                                         )
                                     )}
                                 </div>
                             </div>
                         ) : (
-
-                            <div className="h-screen bg-amber-500">
-                                <div
-                                    className={`h-screen w-screen grid  gap-2 bg-red-400`}
-                                    style={{
-                                        gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                                        gridTemplateRows: `repeat(${rows}, 1fr)`
-                                    }}
-
-                                >
-                                     {localTrack && (
-                                        <VideoComponent
-                                            track={localTrack}
-                                            participantIdentity={participantName || "Test User"}
-                                            local
-                                        />
-                                    )}
+                            <div className="">
+                                <div className={`h-screen w-screen grid grid-rows-${rows} grid-cols-${cols} gap-1 `}>
+                                    
                                     {remoteTracks.map((remoteTrack) =>
                                         remoteTrack.trackPublications.kind === "video" ? (
                                             <VideoComponent
@@ -498,15 +486,17 @@ export default function Dashboard() {
                                             track={remoteTrack.trackPublications.videoTrack!}
                                             participantIdentity={remoteTrack.participantIdentity}
                                             />
-                                        ) : (
-                                            <AudioComponent
-                                            key={remoteTrack.trackPublications.trackSid}
-                                            track={remoteTrack.trackPublications.audioTrack!}
-                                            />
-                                        )
+                                        ) : null
+                                    )}
+                                    {localTrack && (
+                                        <VideoComponent
+                                            track={localTrack}
+                                            participantIdentity={participantName || "Test User"}
+                                            local
+                                        />
                                     )}
                                    
-                            </div>
+                                </div>
 
                             </div>
                            
