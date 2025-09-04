@@ -14,7 +14,6 @@ type Trackinfo = {
     participantIdentity: string,
 }
 
-
 export default function Dashboard() {
     const recorderMap = useRef<Record<string, MediaRecorder>>({});
     const [screenTrack, setScreenTrack] = useState<LocalVideoTrack | undefined>(undefined);
@@ -57,6 +56,14 @@ export default function Dashboard() {
     }
 
     function calculateGrid(n: number, containerWidth: number, containerHeight:number) {
+        if(n == 2 || n == 3){
+            setRows(1);
+            setCols(2);
+            return;
+        }
+
+
+
         let gridCols = Math.ceil(Math.sqrt(n));
         let gridRows = Math.ceil(n / cols);
         if (containerWidth > containerHeight) {
@@ -66,7 +73,8 @@ export default function Dashboard() {
             gridCols = Math.max(rows, cols);
             gridRows = Math.ceil(n / rows);
         }
-
+        console.log("innerwidth", innerWidth);
+        console.log("innerHeight", innerHeight);
         console.log("gridRows", gridRows);
         console.log("gridCols", gridCols);
         setRows(gridRows);
@@ -78,8 +86,6 @@ export default function Dashboard() {
         setParticipantCount(count);
         calculateGrid(count, window.innerWidth, window.innerHeight);
     }, [participantCount])
-
-
 
     async function handleScreenShare() {
         if (!room) return;
@@ -132,6 +138,10 @@ export default function Dashboard() {
             }
         }
     }
+
+    useEffect(() => {
+        console.log("screen Track is changed");
+    }, [screenTrack])
 
     useEffect(() => {
         console.log("role", role);
@@ -397,7 +407,6 @@ export default function Dashboard() {
         }
     }, [stream]);
 
-
     return (
         <>
             {!room ? (
@@ -466,35 +475,37 @@ export default function Dashboard() {
                             </div>
                         ) : (
 
-                            <div className="h-full bg-amber-500">
+                            <div className="h-screen bg-amber-500">
                                 <div
-                                    className="grid gap-4 w-full h-full bg-red-400"
+                                    className={`h-screen w-screen grid  gap-2 bg-red-400`}
                                     style={{
                                         gridTemplateColumns: `repeat(${cols}, 1fr)`,
                                         gridTemplateRows: `repeat(${rows}, 1fr)`
                                     }}
+
                                 >
-                                {localTrack && (
-                                    <VideoComponent
-                                        track={localTrack}
-                                        participantIdentity={participantName || "Test User"}
-                                        local
-                                    />
-                                )}
-                                {remoteTracks.map((remoteTrack) =>
-                                    remoteTrack.trackPublications.kind === "video" ? (
+                                     {localTrack && (
                                         <VideoComponent
+                                            track={localTrack}
+                                            participantIdentity={participantName || "Test User"}
+                                            local
+                                        />
+                                    )}
+                                    {remoteTracks.map((remoteTrack) =>
+                                        remoteTrack.trackPublications.kind === "video" ? (
+                                            <VideoComponent
                                             key={remoteTrack.trackPublications.trackSid}
                                             track={remoteTrack.trackPublications.videoTrack!}
                                             participantIdentity={remoteTrack.participantIdentity}
-                                        />
-                                    ) : (
-                                        <AudioComponent
+                                            />
+                                        ) : (
+                                            <AudioComponent
                                             key={remoteTrack.trackPublications.trackSid}
                                             track={remoteTrack.trackPublications.audioTrack!}
-                                        />
-                                    )
-                                )}
+                                            />
+                                        )
+                                    )}
+                                   
                             </div>
 
                             </div>
