@@ -7,7 +7,6 @@ import { checkStopWorker, saveChunk, startUploadWorker, } from "../utils/uploadw
 import { useSearchParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import AudioComponent from "@/components/AudioComponent";
 
 type Trackinfo = {
     trackPublications: RemoteTrackPublication,
@@ -511,13 +510,13 @@ export default function Dashboard() {
                                                 participantIdentity={remoteTrack.participantIdentity}
                                             />
                                             //@ts-ignore
-                                        ) : <AudioComponent track={remoteTrack.trackPublications.audioTrack}/>
+                                        ) : null
                                         
                                     )}
                                 </div>
                             </div>
                         ) : (
-                                <div className={`h-full w-full grid grid-flow-col grid-cols-${cols} gap-1 `}>
+                                <div className={`h-full w-full grid grid-flow-col grid-cols-${cols} gap-1 `}  >
                                     
                                     {remoteTracks.map((remoteTrack) =>
                                         remoteTrack.trackPublications.kind === "video" ? (
@@ -527,7 +526,7 @@ export default function Dashboard() {
                                                 participantIdentity={remoteTrack.participantIdentity}
                                             />
                                             //@ts-ignore
-                                        ) : <AudioComponent track={remoteTrack.trackPublications.audioTrack}/>
+                                        ) : null
                                     )}
                                     {localTrack && (
                                         <VideoComponent
