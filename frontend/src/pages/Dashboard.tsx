@@ -2,7 +2,7 @@ import axios from "axios";
 import { RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, RemoteVideoTrack, Room, RoomEvent, createLocalScreenTracks, LocalVideoTrack, type AudioTrack, type VideoTrack, LocalAudioTrack } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
 import VideoComponent from "../components/videoComponent";
-import { Disc2, Mic, MicOff } from "lucide-react";
+import { Disc2, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { checkStopWorker, saveChunk, startUploadWorker, } from "../utils/uploadworker";
 import { useSearchParams } from "react-router-dom";
 
@@ -30,6 +30,7 @@ export default function Dashboard() {
     const role = searchParams.get("role");
     const urlsRef = useRef<string[] | null>([]);
     const [isMicOn, setIsMicOn] = useState(true);
+    const [isvideoOn, setIsVideoOn] = useState(true);
     const participantName = localStorage.getItem("participantName");
     const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
     const roomName = localStorage.getItem("roomName")
@@ -419,12 +420,27 @@ export default function Dashboard() {
             console.log("mic is on");
             setIsMicOn(false);
             await (localAudioTrack as LocalAudioTrack).mute();
-            console.log("localTrack after marking it as on", localTrack);
+            console.log("localTrack after marking it as on", localAudioTrack);
         }else{
             console.log("mic is off")
             setIsMicOn(true);
             await (localAudioTrack as LocalAudioTrack).unmute();
-            console.log("localtrack after marking it as off", localTrack);
+            console.log("localtrack after marking it as off", localAudioTrack);
+        }
+    }
+
+    async function handleVideo(){
+        if(isvideoOn){
+            console.log("video is on");
+            setIsVideoOn(false);
+            await (localTrack as LocalVideoTrack).mute();
+            console.log("localTrack after marking it as on", localTrack);
+        }else{
+            console.log("video is off");
+            setIsVideoOn(true);
+            await (localTrack as LocalVideoTrack).unmute();
+            console.log("localTrack after marking it as on", localTrack);
+
         }
     }
 
@@ -524,6 +540,12 @@ export default function Dashboard() {
                                 </div>
                         )}
                         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-2  px-4 py-2 rounded-2xl shadow-lg">
+                            <Button onClick={handleMic}>
+                                {isMicOn ? <Mic /> : <MicOff />}
+                            </Button>
+                            <Button onClick={handleVideo}>
+                                {isvideoOn ? <Video /> : <VideoOff />}
+                            </Button>
                             <Button variant="destructive" onClick={leaveRoom}>
                                 Leave Room
                             </Button>
@@ -532,9 +554,6 @@ export default function Dashboard() {
                             </Button>
                             <Button disabled={isScreenSharedByOthers} onClick={handleStopScreenShare}>
                                 Stop Screen Share
-                            </Button>
-                            <Button onClick={handleMic}>
-                                {isMicOn ? <Mic /> : <MicOff />}
                             </Button>
                             {role === "creator" && (
                                 <div className="flex gap-2">
