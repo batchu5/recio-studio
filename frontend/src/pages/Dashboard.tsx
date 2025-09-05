@@ -1,12 +1,13 @@
 import axios from "axios";
-import { RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, RemoteVideoTrack, Room, RoomEvent, createLocalScreenTracks, LocalVideoTrack, type AudioTrack, type VideoTrack } from "livekit-client";
+import { RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, RemoteVideoTrack, Room, RoomEvent, createLocalScreenTracks, LocalVideoTrack, type AudioTrack, type VideoTrack, LocalAudioTrack } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
 import VideoComponent from "../components/videoComponent";
-import { Disc2 } from "lucide-react";
+import { Disc2, Mic, MicOff } from "lucide-react";
 import { checkStopWorker, saveChunk, startUploadWorker, } from "../utils/uploadworker";
 import { useSearchParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import AudioComponent from "@/components/AudioComponent";
 
 type Trackinfo = {
     trackPublications: RemoteTrackPublication,
@@ -18,6 +19,7 @@ export default function Dashboard() {
     const [screenTrack, setScreenTrack] = useState<LocalVideoTrack | undefined>(undefined);
     const [room, setRoom] = useState<Room | undefined>(undefined);
     const [localTrack, setLocalTrack] = useState<VideoTrack | undefined>(undefined);
+    const [localAudioTrack, setLocalAudioTrack] = useState<AudioTrack | undefined>(undefined);
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const [remoteTracks, setRemoteTracks] = useState<Trackinfo[]>([]);
     const sessionIdRef = useRef<string | null>("");
@@ -27,7 +29,7 @@ export default function Dashboard() {
     const token = searchParams.get("token");
     const role = searchParams.get("role");
     const urlsRef = useRef<string[] | null>([]);
-
+    const [isMicOn, setIsMicOn] = useState(true);
     const participantName = localStorage.getItem("participantName");
     const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
     const roomName = localStorage.getItem("roomName")
@@ -56,6 +58,7 @@ export default function Dashboard() {
 
     function calculateGrid(n: number, containerWidth: number, containerHeight:number) {
         if(n == 2 || n == 3){
+            console.log("number of people in the call is", n);
             setRows(1);
             setCols(2);
             return;
@@ -78,10 +81,13 @@ export default function Dashboard() {
     }
 
     useEffect(() => {
-        let count = (localTrack ? 1 : 0) + (screenTrack ? 1 : 0) +
+        let count = (localTrack ? 1 : 0) +
             remoteTracks.filter(rt => rt.trackPublications.kind === "video").length;
 
-        console.log("participant Count is changed")
+        console.log("count", count);
+        console.log("localTrack value from userEffect of participantcount", localTrack);
+        console.log("remote Tracks", remoteTracks.filter(rt => rt.trackPublications.kind === "video").length);
+        console.log("participant Count is changed");
         calculateGrid(count, window.innerWidth, window.innerHeight);
     }, [participantCount, remoteTracks, localTrack])
 
@@ -96,10 +102,13 @@ export default function Dashboard() {
                 });
                 const stream = new MediaStream();
                 const screenVideoTrack = tracks.find((t) => t.kind === "video");
+                let st:LocalVideoTrack | undefined  = undefined;
                 if (screenVideoTrack) {
 
                     await room.localParticipant.publishTrack(screenVideoTrack);
-                    setScreenTrack(screenVideoTrack as LocalVideoTrack);
+
+                    st = screenVideoTrack as LocalVideoTrack;
+                    setScreenTrack(st);
 
                     stream.addTrack(screenVideoTrack.mediaStreamTrack);
 
@@ -121,9 +130,10 @@ export default function Dashboard() {
                         setScreenTrack(undefined);
                     };
                 }
+                
 
                 room.localParticipant.publishData(
-                    new TextEncoder().encode(JSON.stringify({ action: "screenSharedByOtherUser" })),
+                    new TextEncoder().encode(JSON.stringify({ action: "screenSharedByOtherUser", screenTrack: st})),
                     { reliable: true }
                 );
 
@@ -132,7 +142,7 @@ export default function Dashboard() {
             }
         } else {
             if (screenTrack) {
-
+                
             }
         }
     }
@@ -152,6 +162,7 @@ export default function Dashboard() {
 
         setRoom(undefined);
         setLocalTrack(undefined);
+        setLocalAudioTrack(undefined)
         setRemoteTracks([]);
     }
 
@@ -219,6 +230,8 @@ export default function Dashboard() {
                     stopLocalRecording();
                 } else if (msg.action === "screenSharedByOtherUser") {
                     setIsScreenSharedByOthers(true);
+
+                    setScreenTrack(msg.screenTrack);
                 } else if (msg.action === "StopscreenSharedByOtherUser") {
                     setIsScreenSharedByOthers(false);
                 }
@@ -236,6 +249,7 @@ export default function Dashboard() {
             await room.connect(LIVEKIT_URL, token);
             await room.localParticipant.enableCameraAndMicrophone();
             setLocalTrack(room.localParticipant.videoTrackPublications.values().next().value?.videoTrack);
+            setLocalAudioTrack(room.localParticipant.audioTrackPublications.values().next().value?.audioTrack);
             participantCount.current = participantCount.current + 1;
             return room;
 
@@ -400,6 +414,24 @@ export default function Dashboard() {
         }
     }
 
+    async function handleMic(){
+        if(isMicOn){
+            console.log("mic is on");
+            setIsMicOn(false);
+            await (localAudioTrack as LocalAudioTrack).mute();
+            console.log("localTrack after marking it as on", localTrack);
+        }else{
+            console.log("mic is off")
+            setIsMicOn(true);
+            await (localAudioTrack as LocalAudioTrack).unmute();
+            console.log("localtrack after marking it as off", localTrack);
+        }
+    }
+
+    useEffect(() => {
+        console.log("Mic is changed I should make it mute or unmute");
+    }, [isMicOn])
+
     useEffect(() => {
         if (videoRef.current && stream) {
             videoRef.current.srcObject = stream;
@@ -437,11 +469,10 @@ export default function Dashboard() {
                     </div>
                 </div>
             ) : (
-                <div className="">
-                    <main className="">
+                <div className="h-screen w-screen ">
                         {screenTrack ? (
-                            <div className="flex h-full bg-amber-500">
-                                <div className="flex-1 bg-red-600 rounded-lg overflow-hidden">
+                            <div className="flex h-full ">
+                                <div className="flex-1 rounded-lg overflow-hidden">
                                     <VideoComponent
                                         track={screenTrack}
                                         participantIdentity={`${participantName || "You"} (Screen)`}
@@ -463,30 +494,24 @@ export default function Dashboard() {
                                                 track={remoteTrack.trackPublications.videoTrack!}
                                                 participantIdentity={remoteTrack.participantIdentity}
                                             />
-                                        ) : (
-                                            // <AudioComponent
-                                            //     key={remoteTrack.trackPublications.trackSid}
-                                            //     track={remoteTrack.trackPublications.audioTrack!}
-                                            //     participantIdentity={remoteTrack.participantIdentity}
-                                            // />
-                                            <div> Hello</div>
+                                            //@ts-ignore
+                                        ) : <AudioComponent track={remoteTrack.trackPublications.audioTrack}/>
                                         
-                                        )
                                     )}
                                 </div>
                             </div>
                         ) : (
-                            <div className="">
-                                <div className={`h-screen w-screen grid grid-rows-${rows} grid-cols-${cols} gap-1 `}>
+                                <div className={`h-full w-full grid grid-flow-col grid-cols-${cols} gap-1 `}>
                                     
                                     {remoteTracks.map((remoteTrack) =>
                                         remoteTrack.trackPublications.kind === "video" ? (
-                                            <VideoComponent
-                                            key={remoteTrack.trackPublications.trackSid}
-                                            track={remoteTrack.trackPublications.videoTrack!}
-                                            participantIdentity={remoteTrack.participantIdentity}
+                                                <VideoComponent
+                                                key={remoteTrack.trackPublications.trackSid}
+                                                track={remoteTrack.trackPublications.videoTrack!}
+                                                participantIdentity={remoteTrack.participantIdentity}
                                             />
-                                        ) : null
+                                            //@ts-ignore
+                                        ) : <AudioComponent track={remoteTrack.trackPublications.audioTrack}/>
                                     )}
                                     {localTrack && (
                                         <VideoComponent
@@ -497,31 +522,30 @@ export default function Dashboard() {
                                     )}
                                    
                                 </div>
-
-                            </div>
-                           
                         )}
-                    </main>
-                    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-blue-600 px-4 py-2 rounded-2xl shadow-lg">
-                        <Button variant="destructive" onClick={leaveRoom}>
-                            Leave Room
-                        </Button>
-                        <Button disabled={isScreenSharedByOthers} onClick={handleScreenShare}>
-                            Start Screen Share
-                        </Button>
-                        <Button disabled={isScreenSharedByOthers} onClick={handleStopScreenShare}>
-                            Stop Screen Share
-                        </Button>
-                        {role === "creator" && (
-                            <div className="flex gap-2">
-                                <Button onClick={startAllRecordings}>
-                                    <Disc2 className="text-red-500" />
-                                    Start recording all
-                                </Button>
-                                <Button onClick={stopAllRecordings}>End recording all</Button>
-                            </div>
-                        )}
-                    </div>
+                        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-2  px-4 py-2 rounded-2xl shadow-lg">
+                            <Button variant="destructive" onClick={leaveRoom}>
+                                Leave Room
+                            </Button>
+                            <Button disabled={isScreenSharedByOthers} onClick={handleScreenShare}>
+                                Start Screen Share
+                            </Button>
+                            <Button disabled={isScreenSharedByOthers} onClick={handleStopScreenShare}>
+                                Stop Screen Share
+                            </Button>
+                            <Button onClick={handleMic}>
+                                {isMicOn ? <Mic /> : <MicOff />}
+                            </Button>
+                            {role === "creator" && (
+                                <div className="flex gap-2">
+                                    <Button onClick={startAllRecordings}>
+                                        <Disc2 className="text-red-500" />
+                                        Start recording all
+                                    </Button>
+                                    <Button onClick={stopAllRecordings}>End recording all</Button>
+                                </div>
+                            )}
+                        </div>
                 </div>
 
             )}
