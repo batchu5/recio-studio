@@ -17,7 +17,14 @@ export default function JoinAsGuest(){
             participantName: participantName,
             role: "guest"
         }).then(res => res.data);
-        
+
+        const res = await axios.post(`${BackendUrl}/fetch_roomId_by_roomName`, {
+            roomName: roomName
+        })
+
+        console.log("res", res.data);
+        localStorage.setItem("roomName", roomName);
+        localStorage.setItem("roomId", res.data.roomId);
         navigate(`/dashboard?token=${token}&role=guest`);
     };
     

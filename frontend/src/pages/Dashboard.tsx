@@ -15,7 +15,8 @@ type Trackinfo = {
 
 export default function Dashboard() {
     const recorderMap = useRef<Record<string, MediaRecorder>>({});
-    const [screenTrack, setScreenTrack] = useState<LocalVideoTrack | undefined>(undefined);
+    const [screenTrack, setScreenTrack] = useState<LocalVideoTrack | RemoteVideoTrack | undefined>(undefined);
+    
     const [room, setRoom] = useState<Room | undefined>(undefined);
     const [localTrack, setLocalTrack] = useState<VideoTrack | undefined>(undefined);
     const [localAudioTrack, setLocalAudioTrack] = useState<AudioTrack | undefined>(undefined);
@@ -32,29 +33,16 @@ export default function Dashboard() {
     const [isvideoOn, setIsVideoOn] = useState(true);
     const participantName = localStorage.getItem("participantName");
     const [isRecordingStarted, setIsRecordinStarted] = useState<boolean>(false);
-    const roomName = localStorage.getItem("roomName")
     const [rows, setRows] = useState<number>(1);
     const [cols, setCols] = useState<number>(1);
     const [hasPermission, setHasPermission] = useState<boolean>(false);
     const [stream, setStream] = useState<MediaStream | null>(null);
     const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
     const [isScreenSharedByOthers, setIsScreenSharedByOthers] = useState<boolean>(false);
-
+    const [isScreenShareStarted, SetIsScreenShareStarted] = useState<boolean>(false);
     const participantCount = useRef<number>(0);
-  
 
-    async function handleStopScreenShare() {
-        if (screenTrack && room) {
-            room.localParticipant.unpublishTrack(screenTrack);
-            screenTrack.stop();
-            setScreenTrack(undefined);
-
-            room.localParticipant.publishData(
-                new TextEncoder().encode(JSON.stringify({ action: "StopscreenSharedByOtherUser" })),
-                { reliable: true }
-            );
-        }
-    }
+    
 
     function calculateGrid(n: number, containerWidth: number, containerHeight:number) {
         if(n == 2 || n == 3){
@@ -82,60 +70,97 @@ export default function Dashboard() {
 
     useEffect(() => {
         let count = (localTrack ? 1 : 0) +
-            remoteTracks.filter(rt => rt.trackPublications.kind === "video").length;
+            remoteTracks.filter(rt => rt.trackPublications.kind === "video" && rt.trackPublications.source === "camera" ).length;
 
+        console.log("remoteTracks from useEffect of counting the participants", remoteTracks);
         console.log("count", count);
         console.log("localTrack value from userEffect of participantcount", localTrack);
         console.log("remote Tracks", remoteTracks.filter(rt => rt.trackPublications.kind === "video").length);
         console.log("participant Count is changed");
         calculateGrid(count, window.innerWidth, window.innerHeight);
-    }, [participantCount, remoteTracks, localTrack])
+    }, [participantCount,remoteTracks, localTrack])
 
-    async function handleScreenShare() {
+    useEffect(() => {
+        console.log("screenTrack is changes so may be I need to refresh the screen");
+    }, [screenTrack])
+
+    useEffect(() => {
+        console.log("video is changed I should make it mute or unmute")
+    }, [isvideoOn])
+
+    useEffect(() => {
+        console.log("Mic is changed I should make it mute or unmute");
+    }, [isMicOn])
+
+    useEffect(() => {
+        if (videoRef.current && stream) {
+            videoRef.current.srcObject = stream;
+        }
+    }, [stream]);
+
+    async function handleStopScreenShare() {
+        SetIsScreenShareStarted(false);
+        if (screenTrack && room) {
+            room.localParticipant.unpublishTrack(screenTrack as LocalVideoTrack);
+            screenTrack.stop();
+            setScreenTrack(undefined);
+
+            room.localParticipant.publishData(
+                new TextEncoder().encode(JSON.stringify({ action: "StopscreenSharedByOtherUser" })),
+                { reliable: true }
+            );
+        }
+    }
+
+    async function handleStartScreenShare() {
+        SetIsScreenShareStarted(true);
         if (!room) return;
 
         if (!screenTrack) {
+            console.log("ScreenTrack is empty");
             try {
                 const tracks = await createLocalScreenTracks({
                     video: true,
                     audio: false,
                 });
-                const stream = new MediaStream();
-                const screenVideoTrack = tracks.find((t) => t.kind === "video");
-                let st:LocalVideoTrack | undefined  = undefined;
-                if (screenVideoTrack) {
-
-                    await room.localParticipant.publishTrack(screenVideoTrack);
-
-                    st = screenVideoTrack as LocalVideoTrack;
-                    setScreenTrack(st);
-
-                    stream.addTrack(screenVideoTrack.mediaStreamTrack);
-
-                    const screenRecorder = new MediaRecorder(stream, { "mimeType": "video/webm; codecs=vp8,opus" });
-                    const participantName = localStorage.getItem("userId") + "-screen" || "";
-
-                    console.log("Gonna send the screenShare to the recorder may be");
-                    screenRecorder.ondataavailable = async (event) => {
-                        if (event.data.size > 0 && sessionIdRef.current) {
-                            const blob = event.data;
-                            await saveChunk(sessionIdRef.current, participantName, blob, "screenShare")
-                        }
-                    }
-
-                    screenRecorder.start(5000);
-                    screenVideoTrack.mediaStreamTrack.onended = () => {
-                        room.localParticipant.unpublishTrack(screenVideoTrack);
-                        screenVideoTrack.stop();
-                        setScreenTrack(undefined);
-                    };
-                }
                 
+                const screenVideoTrack = tracks.find((t) => t.kind === "video");
+                
+                if (screenVideoTrack) {
+                    console.log("screenVideoTrack exits so we are gonna publish it");
+                    await room.localParticipant.publishTrack(screenVideoTrack);
+                    setScreenTrack(screenVideoTrack as LocalVideoTrack);
+                    
+                    if(RecordingRef){
+                        const stream = new MediaStream();
+                        stream.addTrack(screenVideoTrack.mediaStreamTrack);
+                        const screenRecorder = new MediaRecorder(stream, { "mimeType": "video/webm; codecs=vp8,opus" });
+                        const participantName = localStorage.getItem("userId") + "-screen" || "";
 
-                room.localParticipant.publishData(
-                    new TextEncoder().encode(JSON.stringify({ action: "screenSharedByOtherUser", screenTrack: st})),
-                    { reliable: true }
-                );
+                        console.log("Gonna send the screenShare to the recorder may be");
+                        screenRecorder.ondataavailable = async (event) => {
+                            if (event.data.size > 0 && sessionIdRef.current) {
+                                const blob = event.data;
+                                await saveChunk(sessionIdRef.current, participantName, blob, "screenShare")
+                            }
+                        }
+
+                        screenRecorder.start(5000);
+                        screenVideoTrack.mediaStreamTrack.onended = () => {
+                            room.localParticipant.unpublishTrack(screenVideoTrack);
+                            screenVideoTrack.stop();
+                            setScreenTrack(undefined);
+                        };
+                    }
+                    console.log("participantIdentity", room.localParticipant.identity);
+                    let partcipantId = room.localParticipant.identity;
+                    room.localParticipant.publishData(
+                        new TextEncoder().encode(JSON.stringify({ action: "screenSharedByOtherUser", participantId: partcipantId})),
+                        { reliable: true }
+                    );
+
+                    
+                }
 
             } catch (error) {
                 console.log("finding the error in handleScreenShare", error);
@@ -147,14 +172,17 @@ export default function Dashboard() {
         }
     }
 
+    function handleScreenSharing(){
+        if(isScreenShareStarted === true){
+            handleStopScreenShare();
+        }else{
+            handleStartScreenShare();
+        }
+    }
+
     useEffect(() => {
         console.log("screen Track is changed");
     }, [screenTrack])
-
-    useEffect(() => {
-        console.log("role", role);
-        console.log("roomName", roomName);
-    })
 
     async function leaveRoom() {
 
@@ -197,17 +225,39 @@ export default function Dashboard() {
                 }
                 if (videoTrack) {
                     console.log("Remote video subscribed", participant.identity, videoTrack);
+                    if(track.source === "camera"){
+                        console.log("remote track is from camera");
+                    }
+                    else if (track.source === "screen_share") {
+                        console.log("remote track is from screenShare");
+                        setIsScreenSharedByOthers(true);
+                        setScreenTrack(videoTrack);
+                    }
                 }
             }
         );
 
         room.on(RoomEvent.TrackUnsubscribed, (_track: RemoteTrack, publication: RemoteTrackPublication) => {
+
+            const pub = publication;
+
+            if(pub.kind === "video" ){
+                if(pub.source === "screen_share"){
+                    console.log("remote track is unsupscribed")
+                    setIsScreenSharedByOthers(false);
+                    setScreenTrack(undefined);
+
+                }else if(pub.source === "camera"){
+                    console.log("remote track is unsubscribed from the camera");
+                }
+                
+                
+            }
             setRemoteTracks((prev) => prev.filter((track) => track.trackPublications.trackSid !== publication.trackSid));
         });
 
         room.on(RoomEvent.DataReceived, async (payload) => {
             try {
-                console.log("Got the data from the creator to start the recording asf");
                 const msg = JSON.parse(new TextDecoder().decode(payload));
                 if (msg.action === "startRecording") {
                     RecordingRef.current = msg.recordingId;
@@ -229,9 +279,24 @@ export default function Dashboard() {
                 else if (msg.action === "stopRecording") {
                     stopLocalRecording();
                 } else if (msg.action === "screenSharedByOtherUser") {
-                    setIsScreenSharedByOthers(true);
+                    console.log("got the message from others to start the screen share");
+                    console.log("particpantIdentity", msg.participantId);
+                    console.log(msg);
+                    console.log("remote Tracks", remoteTracks);
+                    
+                    const pub = remoteTracks.find((t) =>
+                        t.trackPublications.kind === "video" &&
+                        t.trackPublications.source === "screen_share" &&
+                        t.participantIdentity === msg.partcipantId
+                    );
+                
+                    console.log("publication", pub);
+                    if (pub?.trackPublications.videoTrack) {
+                        setIsScreenSharedByOthers(true);
+                        setScreenTrack(pub.trackPublications.videoTrack as LocalVideoTrack);
+                        console.log("setting the screen share from the recievers side");
+                    }
 
-                    setScreenTrack(msg.screenTrack);
                 } else if (msg.action === "StopscreenSharedByOtherUser") {
                     setIsScreenSharedByOthers(false);
                 }
@@ -256,6 +321,14 @@ export default function Dashboard() {
         } catch (error) {
             console.log("There was an error connecting to the room:", (error as Error).message);
             await leaveRoom();
+        }
+    }
+
+    function handleRecording() {
+        if(isRecordingStarted == false){
+            startAllRecordings();
+        }else{
+            stopAllRecordings();
         }
     }
 
@@ -428,30 +501,22 @@ export default function Dashboard() {
         }
     }
 
+
     async function handleVideo(){
         if(isvideoOn){
             console.log("video is on");
             setIsVideoOn(false);
             await (localTrack as LocalVideoTrack).mute();
-            console.log("localTrack after marking it as on", localTrack);
+            console.log("localTrack after marking it as on", LocalVideoTrack);
         }else{
             console.log("video is off");
             setIsVideoOn(true);
             await (localTrack as LocalVideoTrack).unmute();
-            console.log("localTrack after marking it as on", localTrack);
+            console.log("localTrack after marking it as off", LocalVideoTrack);
+
 
         }
     }
-
-    useEffect(() => {
-        console.log("Mic is changed I should make it mute or unmute");
-    }, [isMicOn])
-
-    useEffect(() => {
-        if (videoRef.current && stream) {
-            videoRef.current.srcObject = stream;
-        }
-    }, [stream]);
 
     return (
         <>
@@ -503,13 +568,12 @@ export default function Dashboard() {
                                         />
                                     )}
                                     {remoteTracks.map((remoteTrack) =>
-                                        remoteTrack.trackPublications.kind === "video" ? (
+                                        remoteTrack.trackPublications.kind === "video" && remoteTrack.trackPublications.source === "camera" ? (
                                             <VideoComponent
                                                 key={remoteTrack.trackPublications.trackSid}
                                                 track={remoteTrack.trackPublications.videoTrack!}
                                                 participantIdentity={remoteTrack.participantIdentity}
                                             />
-                                            //@ts-ignore
                                         ) : null
                                         
                                     )}
@@ -525,7 +589,6 @@ export default function Dashboard() {
                                                 track={remoteTrack.trackPublications.videoTrack!}
                                                 participantIdentity={remoteTrack.participantIdentity}
                                             />
-                                            //@ts-ignore
                                         ) : null
                                     )}
                                     {localTrack && (
@@ -548,19 +611,29 @@ export default function Dashboard() {
                             <Button variant="destructive" onClick={leaveRoom}>
                                 Leave Room
                             </Button>
-                            <Button disabled={isScreenSharedByOthers} onClick={handleScreenShare}>
-                                Start Screen Share
-                            </Button>
-                            <Button disabled={isScreenSharedByOthers} onClick={handleStopScreenShare}>
-                                Stop Screen Share
-                            </Button>
+                            <div onClick={handleScreenSharing}>
+                                {
+                                    !isScreenShareStarted ? 
+                                    <Button disabled={isScreenSharedByOthers} >
+                                        Start Screen Share
+                                    </Button> : 
+                                    <Button disabled={isScreenSharedByOthers} >
+                                        Stop Screen Share
+                                    </Button>  
+                                }
+                            </div>
+                            
+                            
                             {role === "creator" && (
                                 <div className="flex gap-2">
-                                    <Button onClick={startAllRecordings}>
-                                        <Disc2 className="text-red-500" />
-                                        Start recording all
-                                    </Button>
-                                    <Button onClick={stopAllRecordings}>End recording all</Button>
+                                    <Button onClick={handleRecording}> 
+                                        {!isRecordingStarted ? 
+                                        <Button >
+                                            <Disc2 className="text-red-500" />
+                                            Start recording all
+                                        </Button> : 
+                                        <Button>End recording all</Button>
+                                    }</Button>
                                 </div>
                             )}
                         </div>
