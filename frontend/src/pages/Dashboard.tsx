@@ -2,11 +2,12 @@ import axios from "axios";
 import { RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, RemoteVideoTrack, Room, RoomEvent, createLocalScreenTracks, LocalVideoTrack, type AudioTrack, type VideoTrack, LocalAudioTrack } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
 import VideoComponent from "../components/videoComponent";
-import { Disc2, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { Disc2, Mic, MicOff, PhoneOff, ScreenShare, Video, VideoOff } from "lucide-react";
 import { checkStopWorker, saveChunk, startUploadWorker, } from "../utils/uploadworker";
 import { useSearchParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import Progress from "@/components/ui/progressBar";
 
 type Trackinfo = {
     trackPublications: RemoteTrackPublication,
@@ -41,8 +42,8 @@ export default function Dashboard() {
     const [isScreenSharedByOthers, setIsScreenSharedByOthers] = useState<boolean>(false);
     const [isScreenShareStarted, SetIsScreenShareStarted] = useState<boolean>(false);
     const participantCount = useRef<number>(0);
-
-    
+    const [isUploading, setIsUploading] = useState(false);
+    const roomName = localStorage.getItem("roomName");
 
     function calculateGrid(n: number, containerWidth: number, containerHeight:number) {
         if(n == 2 || n == 3){
@@ -67,6 +68,10 @@ export default function Dashboard() {
         setRows(gridRows);
         setCols(gridCols);
     }
+
+    useEffect(() => {
+        console.log("roomName", roomName);
+    }, [])
 
     useEffect(() => {
         let count = (localTrack ? 1 : 0) +
@@ -345,16 +350,29 @@ export default function Dashboard() {
         );
         startLocalRecording(room);
     }
+    
+    function startRecording(videoTrack: VideoTrack | RemoteVideoTrack, audioTrack: AudioTrack | RemoteAudioTrack, participantName: string) {
+        setIsRecordinStarted(true);
+        const stream = new MediaStream();
+        if (videoTrack) {
+            stream.addTrack(videoTrack.mediaStreamTrack.clone());
+        }
 
-    async function stopAllRecordings() {
+        if (audioTrack) {
+            stream.addTrack(audioTrack.mediaStreamTrack.clone());
+        }
 
-        setIsRecordinStarted(false);
-        if (!room) return;
-        room.localParticipant.publishData(
-            new TextEncoder().encode(JSON.stringify({ action: "stopRecording" })),
-            { reliable: true }
-        );
-        stopLocalRecording();
+        const recorder = new MediaRecorder(stream, { "mimeType": "video/webm; codecs=vp8,opus" })
+        recorder.ondataavailable = async (event) => {
+            if (event.data.size > 0 && sessionIdRef.current) {
+                const blob = event.data;
+                await saveChunk(sessionIdRef.current, participantName, blob, "camera");
+            }
+        };
+        recorder.start(5000);
+
+        startUploadWorker();
+        return recorder;
     }
 
     function startLocalRecording(currentRoom: Room) {
@@ -389,6 +407,20 @@ export default function Dashboard() {
 
     }
 
+
+    async function stopAllRecordings() {
+        setIsRecordinStarted(false);
+        if (!room) {
+            console.log("room is empty");
+            return;
+        } 
+        room.localParticipant.publishData(
+            new TextEncoder().encode(JSON.stringify({ action: "stopRecording" })),
+            { reliable: true }
+        );
+        stopLocalRecording();
+    }
+
     async function stopLocalRecording() {
         setIsRecordinStarted(false);
         Object.values(recorderMap.current).forEach((recorder) => {
@@ -398,47 +430,29 @@ export default function Dashboard() {
         recorderMap.current = {};
         console.log("🛑 Recording stopped for", participantName);
 
-        while (true) {
-            const isWorkerStopped = checkStopWorker();
-            if (isWorkerStopped) {
-                console.log("stopworker is true from the dashboard stopLocalRecording so gonna call getUrl and getmergedurl");
-                await getUrl();
+        if(role === "creator"){
+            setIsUploading(true);
+            while (true) {
+                const isWorkerStopped = checkStopWorker();
+                if (isWorkerStopped) {
+                    console.log("stopworker is true from the dashboard stopLocalRecording so gonna call getUrl and getmergedurl");
+                    await getUrl();
 
-                if (!urlsRef.current) {
-                    console.log("urlsref is nuill");
-                    return;
+                    if (!urlsRef.current) {
+                        console.log("urlsref is nuill");
+                        return;
+                    }
+                    await getMergedUrl(urlsRef.current);
+                    break;
                 }
-                await getMergedUrl(urlsRef.current);
-                break;
+                await new Promise((r) => setTimeout(r, 1000));
             }
-            await new Promise((r) => setTimeout(r, 1000));
+            setIsUploading(false);
         }
+        
     }
 
-    function startRecording(videoTrack: VideoTrack | RemoteVideoTrack, audioTrack: AudioTrack | RemoteAudioTrack, participantName: string) {
-        setIsRecordinStarted(true);
-        const stream = new MediaStream();
-        if (videoTrack) {
-            stream.addTrack(videoTrack.mediaStreamTrack);
-        }
-
-        if (audioTrack) {
-            stream.addTrack(audioTrack.mediaStreamTrack);
-        }
-
-        const recorder = new MediaRecorder(stream, { "mimeType": "video/webm; codecs=vp8,opus" })
-        recorder.ondataavailable = async (event) => {
-            if (event.data.size > 0 && sessionIdRef.current) {
-                const blob = event.data;
-                await saveChunk(sessionIdRef.current, participantName, blob, "camera");
-            }
-        };
-        recorder.start(5000);
-
-        startUploadWorker();
-        return recorder;
-    }
-
+    
     async function getUrl() {
         try {
             console.log(sessionIdRef.current);
@@ -501,7 +515,6 @@ export default function Dashboard() {
         }
     }
 
-
     async function handleVideo(){
         if(isvideoOn){
             console.log("video is on");
@@ -549,6 +562,7 @@ export default function Dashboard() {
                     </div>
                 </div>
             ) : (
+
                 <div className="h-screen w-screen ">
                         {screenTrack ? (
                             <div className="flex h-full ">
@@ -580,7 +594,22 @@ export default function Dashboard() {
                                 </div>
                             </div>
                         ) : (
+                            <div className="relative h-screen w-screen ">
+                                {role === "creator"&& isUploading  && 
+                                <div className="absolute z-10 w-screen  flex justify-center">
+                                    <div className="bg-neutral-900 px-2 py-4 rounded-xl">
+
+                                    <div className=" font-medium mb-2 text-center text-xl">
+                                        Videos are uploading... <span className="font-semibold text-xl">Don’t leave the room</span>
+                                    </div>
+                                    <Progress value={40} indeterminate={true} className="h-3 rounded-lg" />
+                                    </div>
+                                    
+                                </div>
+                                }
+                                
                                 <div className={`h-full w-full grid grid-flow-col grid-cols-${cols} gap-1 `}  >
+                                    
                                     
                                     {remoteTracks.map((remoteTrack) =>
                                         remoteTrack.trackPublications.kind === "video" ? (
@@ -598,44 +627,50 @@ export default function Dashboard() {
                                             local
                                         />
                                     )}
-                                   
                                 </div>
+                                
+                            </div>
                         )}
-                        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-2  px-4 py-2 rounded-2xl shadow-lg">
-                            <Button onClick={handleMic}>
-                                {isMicOn ? <Mic /> : <MicOff />}
+
+                        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-2  px-4 py-2 rounded-2xl shadow-lg ">
+                        
+                            <Button onClick={handleMic} className="bg-neutral-800 hover:bg-neutral-600 cursor-pointer">
+                                {isMicOn ? <Mic className=" hover:bg-cyan-600 text-white" /> : <MicOff className="text-white"/>}
                             </Button>
-                            <Button onClick={handleVideo}>
-                                {isvideoOn ? <Video /> : <VideoOff />}
+                            <Button onClick={handleVideo} className="bg-neutral-800 hover:bg-neutral-600 cursor-pointer">
+                                {isvideoOn ? <Video className="text-white" /> : <VideoOff className="text-white"/>}
                             </Button>
-                            <Button variant="destructive" onClick={leaveRoom}>
-                                Leave Room
-                            </Button>
+                            
                             <div onClick={handleScreenSharing}>
                                 {
                                     !isScreenShareStarted ? 
-                                    <Button disabled={isScreenSharedByOthers} >
-                                        Start Screen Share
+                                    <Button disabled={isScreenSharedByOthers} className="bg-neutral-800 text-white hover:bg-neutral-600 cursor-pointer">
+                                        <ScreenShare className="text-white" />
+                                        Screen Share
                                     </Button> : 
-                                    <Button disabled={isScreenSharedByOthers} >
+                                    <Button disabled={isScreenSharedByOthers} className="bg-neutral-800 text-white hover:bg-neutral-600 cursor-pointer">
                                         Stop Screen Share
                                     </Button>  
                                 }
                             </div>
-                            
-                            
+
                             {role === "creator" && (
                                 <div className="flex gap-2">
-                                    <Button onClick={handleRecording}> 
+                                    <div onClick={handleRecording}> 
                                         {!isRecordingStarted ? 
-                                        <Button >
-                                            <Disc2 className="text-red-500" />
-                                            Start recording all
-                                        </Button> : 
-                                        <Button>End recording all</Button>
-                                    }</Button>
+                                        <Button className="bg-neutral-800 text-white hover:bg-neutral-600 cursor-pointer">
+                                            <Disc2 className="text-rose-500" />
+                                            Start recording
+                                        </Button > : 
+                                        <Button className="bg-neutral-800 text-white hover:bg-neutral-600 cursor-pointer">End recording</Button>
+                                    }</div>
                                 </div>
                             )}
+                            
+                            <Button variant="destructive" onClick={leaveRoom} disabled={isUploading} className="cursor-pointer">
+                                <PhoneOff />
+                                Leave Room
+                            </Button>
                         </div>
                 </div>
 
