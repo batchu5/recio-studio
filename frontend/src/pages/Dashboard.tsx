@@ -226,6 +226,11 @@ export default function Dashboard() {
 
                 if (audioTrack) {
                     console.log("Remote audio subscribed", participant.identity, audioTrack);
+                    const audioEl = document.createElement("audio");
+                    audioEl.autoplay = true;
+                    // audioEl.playsInline = true;
+                    audioTrack.attach(audioEl);
+                    document.body.appendChild(audioEl);
                 }
                 if (videoTrack) {
                     console.log("Remote video subscribed", participant.identity, videoTrack);
@@ -255,9 +260,13 @@ export default function Dashboard() {
                     console.log("remote track is unsubscribed from the camera");
                 }
                 
-                
             }
             setRemoteTracks((prev) => prev.filter((track) => track.trackPublications.trackSid !== publication.trackSid));
+
+            if(pub.kind === "audio"){
+                 const audioTrack = _track as RemoteAudioTrack;
+                audioTrack.detach();
+            }
         });
 
         room.on(RoomEvent.DataReceived, async (payload) => {
