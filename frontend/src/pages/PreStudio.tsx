@@ -41,8 +41,9 @@ export default function PreStudio(){
       const fetch = async() => {
         const res = await axios.post(`${BackendUrl}/prev_mixed_urls`, {
           participantName : participantName
-        })
+        }) 
 
+        
         setUrls(res.data.fetchedUrls)
       }
 
@@ -69,6 +70,11 @@ export default function PreStudio(){
 
       <div>
         <h1 className="text-2xl mb-4 px-4 text-[#39AAAA]">Previous rooms</h1>
+        {urls.length === 0 && 
+          <div className=" flex items-center justify-center text-neutral-600 text-center text-2xl"> 
+            No previous Rooms found
+          </div>
+        }
         {!selectedRoom && <div className="md:grid md:grid-cols-3 px-6 py-2">
           { 
             urls.map((room) => 

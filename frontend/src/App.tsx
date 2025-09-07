@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import PreStudio from "./pages/PreStudio";
 import JoinAsGuest from "./pages/JoinAsGuest";
 import UniqueRoom from "./pages/UniqueRoom";
+import { ToastContainer } from "react-toastify";
 
 export default function App() {
     return (
@@ -37,6 +38,7 @@ export default function App() {
 
 
           </Routes>
+          <ToastContainer />
 
         </Router>
       

@@ -205,8 +205,7 @@ export default function Dashboard() {
         setRoom(room);
 
         room.on(
-            RoomEvent.TrackSubscribed,
-            (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
+            RoomEvent.TrackSubscribed, (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
                 console.log("Track subscribed:", pub.kind, participant.identity);
 
                 setRemoteTracks((prev) => [
@@ -407,7 +406,6 @@ export default function Dashboard() {
 
     }
 
-
     async function stopAllRecordings() {
         setIsRecordinStarted(false);
         if (!room) {
@@ -452,7 +450,6 @@ export default function Dashboard() {
         
     }
 
-    
     async function getUrl() {
         try {
             console.log(sessionIdRef.current);
@@ -546,13 +543,12 @@ export default function Dashboard() {
                                                 Click here to check
                                             </Button>
                                         </div>
-                                    )
-                                    : (<div className="flex justify-center">
+                                    ): (<div className="flex justify-center" >
                                         <video ref={videoRef} autoPlay playsInline className="w-[200px] h-[160px] rounded-2xl "></video>
                                     </div>)
                                 }
-                                <div className="flex justify-center mt-2">
-                                    <Button onClick={joinRoom} className="w-full">Join Room</Button>
+                                <div className="flex justify-center mt-2" >
+                                    <Button onClick={joinRoom} className="w-full" disabled={!hasPermission}>Join Room</Button>
                                 </div>
                             </div>
 
@@ -570,6 +566,7 @@ export default function Dashboard() {
                                     <VideoComponent
                                         track={screenTrack}
                                         participantIdentity={`${participantName || "You"} (Screen)`}
+                                        isMuted = {screenTrack?.isMuted}
                                         local
                                     />
                                 </div>
@@ -578,6 +575,7 @@ export default function Dashboard() {
                                         <VideoComponent
                                             track={localTrack}
                                             participantIdentity={participantName || "Test User"}
+                                            isMuted={localTrack?.isMuted}
                                             local
                                         />
                                     )}
@@ -587,6 +585,7 @@ export default function Dashboard() {
                                                 key={remoteTrack.trackPublications.trackSid}
                                                 track={remoteTrack.trackPublications.videoTrack!}
                                                 participantIdentity={remoteTrack.participantIdentity}
+                                                isMuted={remoteTrack.trackPublications?.isMuted}
                                             />
                                         ) : null
                                         
@@ -596,7 +595,7 @@ export default function Dashboard() {
                         ) : (
                             <div className="relative h-screen w-screen ">
                                 {role === "creator"&& isUploading  && 
-                                <div className="absolute z-10 w-screen  flex justify-center">
+                                <div className="absolute z-10 w-screen  flex justify-center mt-2">
                                     <div className="bg-neutral-900 px-2 py-4 rounded-xl">
 
                                     <div className=" font-medium mb-2 text-center text-xl">
@@ -609,7 +608,14 @@ export default function Dashboard() {
                                 }
                                 
                                 <div className={`h-full w-full grid grid-flow-col grid-cols-${cols} gap-1 `}  >
-                                    
+                                    {localTrack && (
+                                        <VideoComponent
+                                            track={localTrack}
+                                            participantIdentity={participantName || "Test User"}
+                                            isMuted={localTrack.isMuted}
+                                            local
+                                        />
+                                    )}
                                     
                                     {remoteTracks.map((remoteTrack) =>
                                         remoteTrack.trackPublications.kind === "video" ? (
@@ -617,16 +623,11 @@ export default function Dashboard() {
                                                 key={remoteTrack.trackPublications.trackSid}
                                                 track={remoteTrack.trackPublications.videoTrack!}
                                                 participantIdentity={remoteTrack.participantIdentity}
+                                                isMuted={remoteTrack.trackPublications.isMuted}
                                             />
                                         ) : null
                                     )}
-                                    {localTrack && (
-                                        <VideoComponent
-                                            track={localTrack}
-                                            participantIdentity={participantName || "Test User"}
-                                            local
-                                        />
-                                    )}
+                                    
                                 </div>
                                 
                             </div>

@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom"
+import {  toast } from 'react-toastify';
+
 
 interface User{
     email: string,
@@ -33,6 +35,11 @@ export default function UniqueRoom(){
                 type
             });
 
+            if(res.data == null){
+                toast.error("No tracks found")
+                return;
+            }
+
             const fileUrl = res.data.url; 
             console.log("response", fileUrl);
             const response = await axios.get(fileUrl, { responseType: "blob" });
@@ -54,6 +61,7 @@ export default function UniqueRoom(){
         <h1 className="p-4 m-2 text-2xl text-shadow-2xs text-shadow-cyan-600">Download the tracks of Users</h1>
         {users.length > 0  &&
             <div className="text-white ">
+
                 {users.map((user) => (
                     <div key={user.id} className="p-4 m-2 border border-neutral-800 rounded-2xl w-full  flex justify-between">
                         <div>Track of {user.email.replace("@gmail.com", "")}</div>
@@ -63,7 +71,7 @@ export default function UniqueRoom(){
 
                 {users.map((user) => (
                     <div key={user.id} className="p-4 m-2 border border-neutral-800 rounded-2xl w-full  flex justify-between">
-                        <div>ScreenShare Track of {user.email.replace("@gmail.com", "")}</div>
+                        <div>ScreenShare Track </div>
                         <Button className="cursor-pointer" onClick={() => handleDownloadUrl(roomId as string, user.id, "individual-screen" )}>Download</Button>                 
                     </div>
                 ))}
