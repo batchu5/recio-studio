@@ -1,15 +1,13 @@
 import type { LocalVideoTrack, RemoteVideoTrack } from "livekit-client";
-import { Mic, MicOff } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 interface VideoComponentProps {
     track : LocalVideoTrack | RemoteVideoTrack | null,
     participantIdentity : string,
-    isMuted: boolean,
     local ?: boolean
 }
 
-export default function VideoComponent({track, participantIdentity,local = false, isMuted} : VideoComponentProps){
+export default function VideoComponent({track, participantIdentity,local = false} : VideoComponentProps){
     const videoElement = useRef<HTMLVideoElement | null> (null);
     useEffect(() => {
         if(videoElement.current && track != null){
@@ -29,9 +27,10 @@ export default function VideoComponent({track, participantIdentity,local = false
 
                 </video>
             }
-            <span className="absolute top-2 left-2 ">{!isMuted ? <Mic /> : <MicOff />}</span>
-
-            <span className="absolute text-white bottom-2 left-2 bg-black/50 px-2 py-1 rounded">{participantIdentity + (local ? " (You)" : "")}</span>
+            
+            <span className="absolute text-white bottom-2 left-2 bg-black/50 px-2 py-1 rounded">
+                {participantIdentity + (local ? " (You)" : "")}
+            </span>
         </div>
     )
 }

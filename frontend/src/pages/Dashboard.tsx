@@ -228,10 +228,11 @@ export default function Dashboard() {
                     console.log("Remote audio subscribed", participant.identity, audioTrack);
                     const audioEl = document.createElement("audio");
                     audioEl.autoplay = true;
-                    // audioEl.playsInline = true;
                     audioTrack.attach(audioEl);
                     document.body.appendChild(audioEl);
                 }
+
+
                 if (videoTrack) {
                     console.log("Remote video subscribed", participant.identity, videoTrack);
                     if(track.source === "camera"){
@@ -575,7 +576,6 @@ export default function Dashboard() {
                                     <VideoComponent
                                         track={screenTrack}
                                         participantIdentity={`${participantName || "You"} (Screen)`}
-                                        isMuted = {screenTrack?.isMuted}
                                         local
                                     />
                                 </div>
@@ -584,7 +584,6 @@ export default function Dashboard() {
                                         <VideoComponent
                                             track={localTrack}
                                             participantIdentity={participantName || "Test User"}
-                                            isMuted={localTrack?.isMuted}
                                             local
                                         />
                                     )}
@@ -594,7 +593,6 @@ export default function Dashboard() {
                                                 key={remoteTrack.trackPublications.trackSid}
                                                 track={remoteTrack.trackPublications.videoTrack!}
                                                 participantIdentity={remoteTrack.participantIdentity}
-                                                isMuted={remoteTrack.trackPublications?.isMuted}
                                             />
                                         ) : null
                                         
@@ -604,16 +602,16 @@ export default function Dashboard() {
                         ) : (
                             <div className="relative h-screen w-screen ">
                                 {role === "creator"&& isUploading  && 
-                                <div className="absolute z-10 w-screen  flex justify-center mt-2">
-                                    <div className="bg-neutral-900 px-2 py-4 rounded-xl">
+                                    <div className="absolute z-10 w-screen  flex justify-center mt-2">
+                                        <div className="bg-neutral-900 px-2 py-4 rounded-xl">
 
-                                    <div className=" font-medium mb-2 text-center text-xl">
-                                        Videos are uploading... <span className="font-semibold text-xl">Don’t leave the room</span>
+                                        <div className=" font-medium mb-2 text-center text-xl">
+                                            Videos are uploading... <span className="font-semibold text-xl">Don’t leave the room</span>
+                                        </div>
+                                        <Progress value={40} indeterminate={true} className="h-3 rounded-lg" />
+                                        </div>
+                                        
                                     </div>
-                                    <Progress value={40} indeterminate={true} className="h-3 rounded-lg" />
-                                    </div>
-                                    
-                                </div>
                                 }
                                 
                                 <div className={`h-full w-full grid grid-flow-col grid-cols-${cols} gap-1 `}  >
@@ -621,7 +619,6 @@ export default function Dashboard() {
                                         <VideoComponent
                                             track={localTrack}
                                             participantIdentity={participantName || "Test User"}
-                                            isMuted={localTrack.isMuted}
                                             local
                                         />
                                     )}
@@ -632,7 +629,6 @@ export default function Dashboard() {
                                                 key={remoteTrack.trackPublications.trackSid}
                                                 track={remoteTrack.trackPublications.videoTrack!}
                                                 participantIdentity={remoteTrack.participantIdentity}
-                                                isMuted={remoteTrack.trackPublications.isMuted}
                                             />
                                         ) : null
                                     )}

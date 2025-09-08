@@ -8,12 +8,14 @@ import PreStudio from "./pages/PreStudio";
 import JoinAsGuest from "./pages/JoinAsGuest";
 import UniqueRoom from "./pages/UniqueRoom";
 import { ToastContainer } from "react-toastify";
+import LandingPage from "./pages/LandingPage";
 
 export default function App() {
     return (
         <Router>
 
           <Routes>
+            <Route path="/" element={<LandingPage />}/>
             <Route path="/self" element={<SelfRecording />}/>
             <Route path="/signup" element={<Signup />} />
             <Route path="/signin" element={<Signin />} />
