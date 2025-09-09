@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+
+
+
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -124,5 +127,22 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+
+@property --border-angle{
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@theme{
+
+  --animate-rotate-border: border-rotate 8s linear infinite;
+  @keyframes border-rotate{
+    to{
+      --border-angle: 360deg
+    }
   }
 }

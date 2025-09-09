@@ -1,3 +1,8 @@
+
+import Mic from "@/assets/Mic";
+import UploadIcon from "@/assets/UploadIcon";
+import VideoIcon from "@/assets/Video";
+import Feature from "@/components/Feature";
 import { GridBeams } from "@/components/magicui/grid-beams";
 import { Navbar } from "@/components/NavBar";
 
@@ -26,7 +31,7 @@ export default function LandingPage(){
                                 <div className="m-4 ">
                                     <div className="bg-black rounded-2xl border-1 border-neutral-500">
                                         <img src="https://img.freepik.com/free-photo/medium-shot-man-wearing-headphones_23-2148924741.jpg?t=st=1755471451~exp=1755475051~hmac=2e401058eed84433697de0aeb6db78781209f97a262d1de86588c72d511a9f2a" 
-                                        className="rounded-xl p-2  hover:scale-108 hover:ease-in-out"/>
+                                        className=" rounded-xl p-2  hover:scale-108 hover:ease-in-out"/>
                                     </div>
                                 </div>
                             </div>
@@ -36,8 +41,23 @@ export default function LandingPage(){
                 </div>
             </GridBeams>
             <div className="h-screen">
+                    <h1 className="text-center text-6xl font-bold text-shadow-md text-shadow-blue-500 mt-8">WHY RECIO?</h1>
+                    <div className="">
+                         <div className="flex gap-2 justify-center mt-8">
+                            <Feature heading="Local Recording" description="Each participant's audio/video is recorded locally in full quality before upload" size="sm" svg={<Mic />}/>
+                            <Feature heading="High-Quality Video" description="Up to 4K video and lossless WAV audio, which provides extremely sharp detail, clarity, and color accuracy." size="sm" 
+                            svg={<VideoIcon />}/>
+                        </div>
+                        <div className="flex justify-center mt-2">
+                            <Feature heading="Automatic Backup Uploads" description="Files upload in the background, even while recording is in progress ensuring that your work is continuously saved, backed up, and instantly available without interrupting your session" size="md" svg={<UploadIcon />}/>
+                        </div>
 
+                    </div>
+                   
+                   
             </div>
+
+            
 
         </div>
         

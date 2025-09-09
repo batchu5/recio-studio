@@ -346,7 +346,10 @@ export default function Dashboard() {
         }
     }
 
-    function startAllRecordings() {
+    
+
+
+function startAllRecordings() {
         RecordingRef.current = localStorage.getItem("roomId");
         sessionIdRef.current = RecordingRef.current;
         console.log("recording started", isRecordingStarted);
@@ -460,6 +463,7 @@ export default function Dashboard() {
         
     }
 
+    
     async function getUrl() {
         try {
             console.log(sessionIdRef.current);
