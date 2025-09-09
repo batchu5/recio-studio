@@ -5,6 +5,7 @@ import VideoIcon from "@/assets/Video";
 import Feature from "@/components/Feature";
 import { GridBeams } from "@/components/magicui/grid-beams";
 import { Navbar } from "@/components/NavBar";
+import PricingSection from "@/components/Pricing";
 
 export default function LandingPage(){
     return (
@@ -56,8 +57,11 @@ export default function LandingPage(){
                    
                    
             </div>
-
-            
+            <div className="h-screen  ">
+                <h1 className="text-6xl text-center">Find the <span className="text-blue-500 font-bold">"Perfect"</span> Plan <br /> for your needs</h1>
+                <div className="text-center text-neutral-500 pt-2 py-12 text-lg">Whether you're just starting out or running a large team, we’ve got you covered.</div>
+                <PricingSection />
+            </div>
 
         </div>
         
