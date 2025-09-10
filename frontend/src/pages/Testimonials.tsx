@@ -1,9 +1,7 @@
 interface TestimonialProps{
   animate: string,
 }
-
-export default function Testimonials({animate}: TestimonialProps) {
-  const people = [
+const people = [
     {
       name: "Alex Morgan",
       profession: "Podcast Host",
@@ -48,11 +46,14 @@ export default function Testimonials({animate}: TestimonialProps) {
     },
   ];
 
+export default function Testimonials({animate}: TestimonialProps) {
+  
+
   return (
     <div className="overflow-hidden mt-2">
-      <ul className={`flex gap-2 flex-nowrap ${animate}`}>
+      <ul className={`flex md:gap-2 md:flex-nowrap ${animate}`}>
         {[...people, ...people].map((person, index) => (
-          <li key={index} className="flex-shrink-0">
+          <li key={index} className="flex-shrink-0 px-2">
             <TestimonialElement
               comment={person.comment}
               name={person.name}
@@ -75,10 +76,10 @@ interface TestimonialElementProps{
 }
 
 function TestimonialElement({comment, name, profession, photo} : TestimonialElementProps){
-    return <div className="w-[300px] bg-neutral-100 text-black rounded-2xl p-4 ">
+    return <div className="w-[90vw] sm:w-[300px] bg-neutral-100 text-black rounded-2xl p-4 ">
         <div className=" m-1 font-semibold">{comment}</div>
         <div className="flex gap-2 items-end ">
-            <img src={photo} className="rounded-full w-12 h-12 "/>
+            <img src={photo} className="rounded-full w-6 h-6 md:w-12 md:h-12 "/>
             <div>
                 <div className="font-bold text-lg">{name}</div>
                 <div>{profession}</div>

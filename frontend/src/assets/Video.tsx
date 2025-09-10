@@ -1,7 +1,24 @@
+import {motion} from "motion/react";
+
 export default function VideoIcon(){
-    return <div className="p-2">
+    return <motion.div className="text-white p-1"
+            initial={{
+                x: 0,
+                y: 0,
+            }}
+            whileHover={{
+                x: [0, 0, 0,],
+                y: [0, -6, 0,],
+            
+            }}
+            transition={{
+                ease: "easeInOut",
+                duration: 0.2
+            }}
+            >
+                
         <svg  xmlns="http://www.w3.org/2000/svg"  width="50"  height="50"  viewBox="0 0 24 24"  fill="currentColor"  className="icon icon-tabler icons-tabler-filled icon-tabler-brand-youtube">
         <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
         <path d="M18 3a5 5 0 0 1 5 5v8a5 5 0 0 1 -5 5h-12a5 5 0 0 1 -5 -5v-8a5 5 0 0 1 5 -5zm-9 6v6a1 1 0 0 0 1.514 .857l5 -3a1 1 0 0 0 0 -1.714l-5 -3a1 1 0 0 0 -1.514 .857z" /></svg>
-    </div>
+    </motion.div>
 }

@@ -1,9 +1,10 @@
 import Tick from "@/assets/Tick"
 import { Button } from "./ui/button"
+import NumberTicker from "./NumberTicker"
 
 export default function PricingSection(){
     return (
-        <div className="flex justify-center items-center gap-4">
+        <div className="md:flex md:justify-center md:items-center md:gap-4">
             <PricingElement planType="free" money="0" bestFor="individuals testing our platform" features={["Record up to 2 hours/month", "720p video and 128 kbps audio", "1 host + 1 guest", "Standard video/audio export"]} main={"bg-linear-to-b from-neutral-400 to-neutral-300"} className="bg-linear-to-tr from-black to-white from-60%" mainBlob="right-0 top-0" insideBlob="w-32 h-32" mostPopular={false} suitableFor={"Start free"}/>
 
             <PricingElement planType="professional" money="15" bestFor="Ideal for creators and small teams" features={["Record up to 20 hours/month","1080p video and 256 kbps audio ", "Up to 4 participants per recording", "Flexible recording: single or multi-track" ]} 
@@ -30,9 +31,9 @@ interface pricingProps{
 }
 function PricingElement({planType, money, bestFor, features,main, className, mainBlob, insideBlob, mostPopular, suitableFor}: pricingProps){
     return (
-        <div className={`w-[351px] h-[501px] flex items-end rounded-2xl ${className}`}>
-            <div className={`w-[350px] h-[500px] bg-neutral-900 rounded-2xl p-8 relative `}>
-                <div className={`absolute ${mainBlob}`}>
+        <div className={`mt-4 min-w-screen md:min-w-0 w-[351px] h-fit md:h-[501px] md:flex md:items-end rounded-2xl ${className}`}>
+            <div className={`min-w-screen md:min-w-0 w-[350px] h-fit md:h-[500px] bg-neutral-900 rounded-2xl p-8  md:relative`}>
+                <div className={`md:absolute ${mainBlob}`}>
                     <div className={` rounded-full bg-white/20 filter blur-2xl  ${insideBlob}`}></div>
                 </div>
                 <div className="text-3xl capitalize mb-8 text-neutral-300 flex justify-between">
@@ -43,7 +44,7 @@ function PricingElement({planType, money, bestFor, features,main, className, mai
 
                     <div className={`${mostPopular ? "text-xl backdrop-blur-xl px-4 py-2 rounded-3xl border-1 border-neutral-400/20" : "opacity-0"} flex items-center`}>most popular</div>
                 </div>
-                <div className="text-5xl mb-4">${money}.00<span className="text-xl text-neutral-500">/month</span></div>
+                <NumberTicker className="text-5xl mb-4" from={0} to={Number(money)}/>
                 <div className="capitalize text-2xl mt-6 text-neutral-500">{bestFor}</div>
                 <Button className={`w-full ${main}  my-12 border-[0.5px] border-blue-400" variant={"ghost"}`} size="lg">Sign up for {planType}</Button>
                 <div className="flex items-center justify-center gap-2">
