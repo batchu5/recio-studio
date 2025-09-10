@@ -1,4 +1,4 @@
-import { animate, useInView, useIsomorphicLayoutEffect, type KeyframeOptions, type NumberMap } from "motion/react"
+import { animate, useInView, useIsomorphicLayoutEffect, type KeyframeOptions } from "motion/react"
 import { useRef } from "react";
 
 interface NumberProps{

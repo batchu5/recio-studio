@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import {  easeIn, easeInOut, motion} from "motion/react";
+import {  easeInOut, motion} from "motion/react";
 
 interface featureProps{
     heading: string,
