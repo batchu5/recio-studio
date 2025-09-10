@@ -9,6 +9,7 @@ import JoinAsGuest from "./pages/JoinAsGuest";
 import UniqueRoom from "./pages/UniqueRoom";
 import { ToastContainer } from "react-toastify";
 import LandingPage from "./pages/LandingPage";
+import AnimatedText from "./components/AnimatedText";
 
 export default function App() {
     return (
@@ -37,6 +38,7 @@ export default function App() {
             } />
 
             <Route path="/preStudio/:roomId" element={<UniqueRoom />} />
+            <Route path="/animatedText" element={<AnimatedText words="Recio is the easiest way to record podcasts and videos  in studio quality from anywhere. No installs, all online"/>} />
 
 
           </Routes>
