@@ -9,7 +9,7 @@ import Testimonials from "./Testimonials";
 import {motion} from "motion/react"
 import { Button } from "@/components/ui/button";
 import AnimatedText from "@/components/AnimatedText";
-import Footer from "./Footer";
+import Footer from "../components/Footer";
 export default function LandingPage(){
     return (
         <div className="overflow-x-hidden">
