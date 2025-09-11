@@ -6,7 +6,7 @@ import { userIdAtom } from "../atoms/userId";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-export default function Signup() {
+export default function Signin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -17,7 +17,7 @@ export default function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${BackendUrl}/signup`, {
+      const response = await axios.post(`${BackendUrl}/signin`, {
         email,
         password,
       });
@@ -27,7 +27,7 @@ export default function Signup() {
 
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("participantName", response.data.user.email);
-
+      localStorage.setItem("userId",response.data.user.id);
       if(localStorage.getItem("isFromProtectedRoute") === "no"){
         navigate("/preStudio");
       }else{
@@ -43,41 +43,43 @@ export default function Signup() {
 
   return (
     <div className="h-screen w-screen flex justify-center items-center ">
-      <div className="rounded-xl w-[252px] bg-linear-to-tr from-70% from-black to-cyan-300  h-[250px]">
-        <div className="rounded-xl  w-[251px] bg-linear-to-bl from-70% from-black to-cyan-300 h-[249px] mt-[1px] mr-[1px]">
+      <div className="rounded-xl ml-1 mb-1 bg-[linear-gradient(to_top_right,_#67e8f9_10%,_black_20%_80%,_#67e8f9_90%)]">
 
-          <div className="px-8 py-8 rounded-xl bg-black w-[250px] h-[248px] ml-[1px] mb-[1px]">
-              <div className="">
-              <h1 className="text-2xl text-center font-bold">Welcome</h1>
-              <h3 className="mb-6 text-neutral-400">Signup to your account to continue</h3>
+          <div className="px-8 py-8 rounded-xl bg-black m-[1px] md:flex gap-2">
+            <div className="flex items-center justify-center">
+              <img src="https://img.freepik.com/free-photo/woman-with-headset-video-call_23-2148854900.jpg" className="md:w-[300px] md:h-[200px] rounded-xl"/>
+            </div>
+            <div className="pl-4">
+              <h1 className="text-2xl text-center font-bold">Welcome </h1>
+              <h3 className="mb-6 text-neutral-400 text-center">Sign up to continue</h3>
 
               <form onSubmit={handleSubmit} className="">
-                  <div>
-                    <label>Username</label>
-                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="email" />
+                <div>
+                  <label>Username</label>
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="email" />
 
-                  </div>
+                </div>
 
-                  <div>
-                    <label>Password</label>
-                    <Input
-                      placeholder="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
+                <div>
+                  <label>Password</label>
+                  <Input
+                    placeholder="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
 
                 <div className="text-xs cursor-pointer hover:text-cyan-300 text-neutral-500 text-right mt-1">Forget Password</div>
-                <Button className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300" onSubmit={handleSubmit}>Signup</Button>
+
+                <Button className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300" onSubmit={handleSubmit}>Sign up</Button>
+                <div className="mt-1 text-neutral-500 "> Already have an account? <span className="text-cyan-300 hover:text-cyan-500 cursor-pointer" onClick={() => {navigate("/signin")}}>Signin</span></div>
               </form>
 
           </div>
 
-        </div>
-        
-        </div>
+          </div>
 
       </div>
      </div>
