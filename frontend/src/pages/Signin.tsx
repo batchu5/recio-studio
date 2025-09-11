@@ -28,7 +28,11 @@ export default function Signin() {
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("participantName", response.data.user.email);
       localStorage.setItem("userId",response.data.user.id);
-      navigate("/preStudio");
+      if(localStorage.getItem("isFromProtectedRoute") === "no"){
+        navigate("/preStudio");
+      }else{
+        navigate(`${localStorage.getItem("isFromProtectedRoute")}`);
+      }
 
     } catch (error: any) {
       if (error.response) {

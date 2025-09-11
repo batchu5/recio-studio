@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import { Button } from "@/components/ui/button";
 
 export default function JoinAsGuest(){
 
@@ -28,8 +29,8 @@ export default function JoinAsGuest(){
         navigate(`/dashboard?token=${token}&role=guest`);
     };
     
-    return <div>
-        <button onClick={joinAsGuest}>Join Room</button>
+    return <div className="h-screen w-screen flex justify-center items-center">
+        <Button onClick={joinAsGuest}>Join Room As Guest</Button>
     </div>
 
 }

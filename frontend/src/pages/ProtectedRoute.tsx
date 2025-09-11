@@ -7,11 +7,14 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const token = localStorage.getItem("token");
+  const currentUrl = window.location.pathname;   
+
 
   if (!token) {
-    return <Navigate to="/signin" replace />;
+    localStorage.setItem("isFromProtectedRoute", currentUrl);
+    return <Navigate to="/signup" replace />;
   }
-
+  localStorage.setItem("isFromProtectedRoute", "no");
   return <>{children}</>;
 };
 
