@@ -45,10 +45,10 @@ export default function Signin() {
       <div className="rounded-xl ml-1 mb-1 bg-[linear-gradient(to_top_right,_#67e8f9_10%,_black_20%_80%,_#67e8f9_90%)]">
 
           <div className="px-8 py-8 rounded-xl bg-black m-[1px] md:flex gap-2">
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-center basis-2/3">
               <img src="https://img.freepik.com/free-photo/woman-with-headset-video-call_23-2148854900.jpg" className="md:w-[300px] md:h-[200px] rounded-xl"/>
             </div>
-            <div className="pl-4">
+            <div className="pl-4 basis-1/2">
               <h1 className="text-2xl text-center font-bold">Welcome back</h1>
               <h3 className="mb-6 text-neutral-400">Login to your account to continue</h3>
 
