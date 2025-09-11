@@ -14,7 +14,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     localStorage.setItem("isFromProtectedRoute", currentUrl);
     return <Navigate to="/signup" replace />;
   }
-  localStorage.setItem("isFromProtectedRoute", "no");
+  
   return <>{children}</>;
 };
 
