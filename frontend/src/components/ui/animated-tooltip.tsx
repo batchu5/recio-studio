@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import  { useState, useRef } from "react";
 import {
   motion,
   useTransform,
@@ -48,8 +48,9 @@ export const AnimatedTooltip = ({
     <>
       {items.map((item, idx) => (
         <div
+          
           className="group relative -mr-4"
-          key={item.name}
+          key={idx}
           onMouseEnter={() => setHoveredIndex(item.id)}
           onMouseLeave={() => setHoveredIndex(null)}
         >
