@@ -21,9 +21,6 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="text-center text-xs text-neutral-500 mt-4">
-        © {new Date().getFullYear()} Recio. All rights reserved.
-      </div>
     </footer>
   )
 }

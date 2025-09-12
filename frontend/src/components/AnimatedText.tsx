@@ -22,7 +22,7 @@ export default function AnimatedText({words}: {words: string}){
         );
     };
     return (
-            <div className="text-white text-8xl flex justify-center items-center max-w-2xl" ref={scope}>
+            <div className="text-white text-5xl flex justify-center items-center " ref={scope}>
                 <motion.div  >
                     {words.split(" ").map((word, index) => 
                         <motion.span key={index} style={{

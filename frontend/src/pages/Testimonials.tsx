@@ -13,7 +13,7 @@ const people = [
       name: "Priya Sharma",
       profession: "Journalist",
       comment:
-        "As a journalist, I interview guests from all over the world. This platform makes the entire process seamless and professional.",
+        "As a journalist, I interview guests from all over the world. This platform makes the entire process seamless",
       photo: "https://randomuser.me/api/portraits/women/39.jpg",
     },
     {
@@ -74,9 +74,9 @@ interface TestimonialElementProps{
 }
 
 function TestimonialElement({comment, name, profession, photo} : TestimonialElementProps){
-    return <div className="w-[90vw] sm:w-[300px] lg:[400px] bg-neutral-900 text-white rounded-2xl p-4 border-1 border-neutral-500">
-        <div className=" m-1 font-semibold">{comment}</div>
-        <div className="flex gap-2 items-end ">
+    return <div className="w-[90vw] sm:w-[300px] lg:[400px] bg-neutral-950 text-white rounded-2xl p-4 border-1 border-neutral-500">
+        <div className=" m-1  text-2xl">{comment}</div>
+        <div className="flex gap-2 items-end mt-4">
             <img src={photo} className="rounded-full w-6 h-6 lg:w-12 lg:h-12 "/>
             <div>
                 <div className="font-bold text-lg">{name}</div>
