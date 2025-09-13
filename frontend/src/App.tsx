@@ -11,6 +11,8 @@ import { ToastContainer } from "react-toastify";
 import LandingPage from "./pages/LandingPage";
 import { RoomProvider } from "./components/RoomContext";
 import Callback from "./pages/CallBack";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 export default function App() {
 
@@ -23,8 +25,10 @@ export default function App() {
             <Route path="/self" element={<SelfRecording />}/>
             <Route path="/signup" element={<Signup />} />
             <Route path="/signin" element={<Signin />} />
-            
+            <Route path="/forgotpassword" element={<ForgotPassword />} />
+            <Route path="/reset-password" element ={<ResetPassword />}/>
             <Route path="/preStudio" element={<PreStudio/>} />
+
 
             <Route
              path="/dashboard" 
