@@ -59,6 +59,13 @@ export default function Signin() {
               <h3 className="mb-6 text-neutral-400 text-center">Sign up to continue to Recio</h3>
 
               <form onSubmit={handleSubmit} className="">
+                <Button className="w-full cursor-pointer" variant={"outline"} onClick={() => {
+                     window.location.href = `${BackendUrl}/auth/google`;
+                  }}>
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png" className="w-6 h-6" />
+                  Continue with Google
+                </Button>
+                <div className="text-center text-xl my-2">or </div>
                 <div>
                   <label>Username</label>
                   <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="email" />
@@ -75,11 +82,11 @@ export default function Signin() {
                     required
                   />
                 </div>
-
                 <div className="text-xs cursor-pointer hover:text-cyan-300 text-neutral-500 text-right mt-1">Forget Password</div>
 
                 <Button className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300" onSubmit={handleSubmit}>Sign up</Button>
                 <div className="mt-1 text-neutral-500"> Already have an account? <span className="text-cyan-300 hover:text-cyan-500 cursor-pointer" onClick={() => {navigate("/signin")}}>Signin</span></div>
+
               </form>
 
           </div>

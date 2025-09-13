@@ -10,6 +10,7 @@ import UniqueRoom from "./pages/UniqueRoom";
 import { ToastContainer } from "react-toastify";
 import LandingPage from "./pages/LandingPage";
 import { RoomProvider } from "./components/RoomContext";
+import Callback from "./pages/CallBack";
 
 export default function App() {
 
@@ -42,6 +43,7 @@ export default function App() {
             } />
 
             <Route path="/preStudio/:roomId" element={<UniqueRoom />} />
+            <Route path="/auth/callback/" element={<Callback />}/>
 
 
           </Routes>
