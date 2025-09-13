@@ -28,8 +28,13 @@ export default function Signin() {
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("participantName", response.data.user.email);
       localStorage.setItem("userId",response.data.user.id);
-      if(localStorage.getItem("isFromProtectedRoute")){
-        navigate(`${localStorage.getItem("isFromProtectedRoute")}`);
+
+      if(localStorage.getItem("isFromProtectedRoute") ){
+        const item = localStorage.getItem("isFromProtectedRoute");
+        if(item != null){
+          localStorage.removeItem(item);
+          navigate(item);
+        }
       }else{
         navigate("/preStudio");
       }
@@ -74,7 +79,7 @@ export default function Signin() {
                 <div className="text-xs cursor-pointer hover:text-cyan-300 text-neutral-500 text-right mt-1">Forget Password</div>
 
                 <Button className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300" onSubmit={handleSubmit}>Sign up</Button>
-                <div className="mt-1 text-neutral-500 "> Already have an account? <span className="text-cyan-300 hover:text-cyan-500 cursor-pointer" onClick={() => {navigate("/signin")}}>Signin</span></div>
+                <div className="mt-1 text-neutral-500"> Already have an account? <span className="text-cyan-300 hover:text-cyan-500 cursor-pointer" onClick={() => {navigate("/signin")}}>Signin</span></div>
               </form>
 
           </div>

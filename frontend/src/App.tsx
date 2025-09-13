@@ -35,7 +35,7 @@ export default function App() {
               </ProtectedRoute>
             } />
 
-            <Route path = "/join/:roomName" element={
+            <Route path = "/join/:roomId" element={
               <ProtectedRoute >
                   <JoinAsGuest />
               </ProtectedRoute>

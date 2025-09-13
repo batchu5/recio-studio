@@ -60,11 +60,10 @@ export default function PermissionCheck(){
                                 role === "creator" && <Button className="w-full" 
                                     onClick={() => {
                                         toast.success("link copied");
-                                        navigator.clipboard.writeText(`${origin}/join/${localStorage.getItem("roomName")}`);
+                                        navigator.clipboard.writeText(`${origin}/join/${localStorage.getItem("roomId")}`);
                                     }}>
                                         Share url with others
                                     </Button>
-                                    
                             }
                             
                         </div>

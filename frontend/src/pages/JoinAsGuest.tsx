@@ -1,31 +1,31 @@
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 export default function JoinAsGuest(){
 
-    const { roomName } = useParams();
+    const { roomId } = useParams();
     const participantName = localStorage.getItem("participantName");
     const navigate = useNavigate();
     const BackendUrl = import.meta.env.VITE_BACKEND_URL;
 
+    useEffect(() => {
+        console.log("not working", roomId)
+    },[])
+
     const joinAsGuest = async () => {
-        if(!roomName){
+        if(!roomId){
             return;
         }
+        console.log("callnig the joinAsGuest")
         const { token } = await axios.post(`${BackendUrl}/getToken`, {
-            roomName,
+            roomId,
             participantName: participantName,
             role: "guest"
         }).then(res => res.data);
 
-        const res = await axios.post(`${BackendUrl}/fetch_roomId_by_roomName`, {
-            roomName: roomName
-        })
-
-        console.log("res", res.data);
-        localStorage.setItem("roomName", roomName);
-        localStorage.setItem("roomId", res.data.roomId);
+        localStorage.setItem("roomId", roomId);
         navigate(`/dashboard?token=${token}&role=guest`);
     };
     

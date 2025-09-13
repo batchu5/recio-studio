@@ -28,7 +28,7 @@ export default function PreStudio(){
         role: "creator"
       }).then(res => res.data);
 
-      const shareLink = `${window.location.origin}/join/${room.name}`;
+      const shareLink = `${window.location.origin}/join/${room.id}`;
       localStorage.setItem("roomName", room.name);
       localStorage.setItem("roomId", room.id);
       navigate(`/dashboard?token=${token}&role=creator`);
