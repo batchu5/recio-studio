@@ -36,7 +36,7 @@ export default function PermissionCheck(){
 
     return (
         <div className="h-screen flex items-center justify-center">
-            <div className="bg-black p-4 flex">
+            <div className="dark:bg-black  border-xl p-4 flex">
                 <div className="flex justify-center ">
                     <div className="">
                         <h1 className=" text-2xl ">Let's check your  Camera and mic...</h1>
@@ -44,7 +44,7 @@ export default function PermissionCheck(){
                         {!hasPermission
                             ? (
                                 <div className="flex justify-center mt-2">
-                                    <Button onClick={enablePermission} className="w-full">
+                                    <Button onClick={enablePermission} className="w-full ">
                                         Click here to check
                                     </Button>
                                 </div>
@@ -63,7 +63,8 @@ export default function PermissionCheck(){
                                         navigator.clipboard.writeText(`${origin}/join/${localStorage.getItem("roomId")}`);
                                     }}>
                                         Share url with others
-                                    </Button>
+                                </Button>
+
                             }
                             
                         </div>

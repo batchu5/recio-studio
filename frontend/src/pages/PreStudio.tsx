@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
+import { toast } from "react-toastify";
 
 interface roomProps { 
   url : string,
@@ -22,18 +23,32 @@ export default function PreStudio(){
    
     const joinAsCreator = async () => {
       console.log("participantName:", participantName);
-      const { token, room } = await axios.post(`${BackendUrl}/getToken`, {
-        roomName: roomName,
-        participantName: participantName,
-        role: "creator"
-      }).then(res => res.data);
 
-      const shareLink = `${window.location.origin}/join/${room.id}`;
-      localStorage.setItem("roomName", room.name);
-      localStorage.setItem("roomId", room.id);
-      navigate(`/dashboard?token=${token}&role=creator`);
-    
-      console.log("Share this link with guests:", shareLink);
+      try{
+        const { token, room } = await axios.post(`${BackendUrl}/getToken`, {
+          roomName: roomName,
+          participantName: participantName,
+          role: "creator"
+        }).then(res => res.data);
+        const shareLink = `${window.location.origin}/join/${room.id}`;
+        localStorage.setItem("roomName", room.name);
+        localStorage.setItem("roomId", room.id);
+        navigate(`/dashboard?token=${token}&role=creator`);
+      
+        console.log("Share this link with guests:", shareLink);
+
+      }catch (err: any) {
+          if (err.response) {
+            toast.error("server error");
+            console.error("Server error:", err.response.status, err.response.data);
+          } else if (err.request) {
+            toast.error("network error occured")
+            console.error("Network error:", err.message);
+          } else {
+            toast.error("Something went wrong pls try again after some time")
+            console.error("Error:", err.message);
+          }
+      }
     };
 
     useEffect(() => {

@@ -74,7 +74,7 @@ interface TestimonialElementProps{
 }
 
 function TestimonialElement({comment, name, profession, photo} : TestimonialElementProps){
-    return <div className="w-[90vw] sm:w-[300px] lg:[400px] bg-neutral-950 text-white rounded-2xl p-4 border-1 border-neutral-500">
+    return <div className="w-[90vw] sm:w-[300px] lg:[400px] bg-neutral-50 dark:bg-neutral-950  rounded-2xl p-4 border-1 border-neutral-500 text-neutral-700 dark:text-neutral-500">
         <div className=" m-1  text-2xl">{comment}</div>
         <div className="flex gap-2 items-end mt-4">
             <img src={photo} className="rounded-full w-6 h-6 lg:w-12 lg:h-12 "/>

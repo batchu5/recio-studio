@@ -5,6 +5,7 @@ import { useSetRecoilState } from "recoil";
 import { userIdAtom } from "../atoms/userId";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "react-toastify";
 
 export default function Signin() {
   const [email, setEmail] = useState("");
@@ -39,18 +40,26 @@ export default function Signin() {
         navigate("/preStudio");
       }
 
-    } catch (error: any) {
-      if (error.response) {
-        console.log({ "error": error })
-      }
-    }
-  };
+    } catch (err: any) {
+          if (err.response) {
+            toast.error("server error");
+            console.error("Server error:", err.response.status, err.response.data);
+          } else if (err.request) {
+            toast.error("network error occured")
+            console.error("Network error:", err.message);
+          } else {
+            toast.error("Something went wrong pls try again after some time")
+            console.error("Error:", err.message);
+          }
+        }
+    };
+  
 
   return (
-    <div className="h-screen w-screen flex justify-center items-center ">
-      <div className="rounded-xl ml-1 mb-1 bg-[linear-gradient(to_top_right,_#67e8f9_10%,_black_20%_80%,_#67e8f9_90%)]">
+    <div className="h-screen w-screen flex justify-center items-center" >
+      <div className="rounded-xl ml-1 mb-1 bg-[linear-gradient(to_top_right,_black_10%,_white_20%_80%,_black_90%)] dark:bg-[linear-gradient(to_top_right,_#67e8f9_10%,_black_20%_80%,_#67e8f9_90%)]">
 
-          <div className="px-8 py-8 rounded-xl bg-black m-[1px] md:flex gap-2">
+          <div className="px-8 py-8 rounded-xl bg-neutral-200 dark:bg-black m-[1px] md:flex gap-2">
             <div className="flex items-center justify-center basis-2/3">
               <img src="https://img.freepik.com/free-photo/woman-with-headset-video-call_23-2148854900.jpg" className="md:w-[300px] md:h-[200px] rounded-xl"/>
             </div>
@@ -82,10 +91,10 @@ export default function Signin() {
                     required
                   />
                 </div>
-                <div className="text-xs cursor-pointer hover:text-cyan-300 text-neutral-500 text-right mt-1">Forget Password</div>
+                <div className="text-xs cursor-pointer hover:text-black dark:hover:text-cyan-300 text-neutral-500 text-right mt-1">Forget Password</div>
 
                 <Button className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300" onSubmit={handleSubmit}>Sign up</Button>
-                <div className="mt-1 text-neutral-500"> Already have an account? <span className="text-cyan-300 hover:text-cyan-500 cursor-pointer" onClick={() => {navigate("/signin")}}>Signin</span></div>
+                <div className="mt-1 text-neutral-500"> Already have an account? <span className="text-black dark:text-cyan-300 hover:text-cyan-500 cursor-pointer" onClick={() => {navigate("/signin")}}>Signin</span></div>
 
               </form>
 

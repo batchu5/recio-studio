@@ -21,7 +21,7 @@ export default function VideoComponent({track, participantIdentity,local = false
     }, [track]);
 
     return (
-        <div className="relative rounded-xl h-full w-full bg-neutral-600  flex justify-center">
+        <div className="relative rounded-xl h-full w-full dark:bg-neutral-600  flex justify-center">
             {track ? <video ref={videoElement} id={track.sid} className="rounded-2xl h-full"/> :
                 <video ref={videoElement} className="w-full h-full rounded-2xl">
 

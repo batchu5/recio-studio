@@ -1,9 +1,9 @@
 export default function Footer() {
   return (
-    <footer className="w-full bg-neutral-900 text-neutral-300 py-6 mt-16">
+    <footer className="w-full dark:bg-neutral-900 dark:text-neutral-300 py-6 mt-16">
       <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
       
-        <div className="text-lg font-bold text-white">
+        <div className="text-lg font-bold dark:text-white">
           Recio
         </div>
 

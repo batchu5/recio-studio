@@ -3,6 +3,7 @@ import axios from "axios";
 import { createLocalScreenTracks, RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, Room, RoomEvent, type AudioTrack, type LocalVideoTrack, type RemoteVideoTrack, type VideoTrack } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 type Trackinfo = {
     trackPublications: RemoteTrackPublication,
@@ -416,6 +417,7 @@ export  function useRoomManager(){
             console.log(res.data);
             urlsRef.current = res.data.urls;
         } catch (error) {
+            toast.error("got error while while uploading the urls");
             console.log("error occured bhahu", error);
         }
     }
@@ -433,6 +435,7 @@ export  function useRoomManager(){
             console.log("finalurl from getMergedUrl", finalurl);
 
         } catch (error) {
+            toast.error("got error while while uploading the urls");
             console.log("error from the getMergedUrl", error);
         }
     }
