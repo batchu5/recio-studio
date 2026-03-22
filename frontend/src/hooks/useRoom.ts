@@ -386,77 +386,49 @@ export  function useRoomManager(){
             while (true) {
                 const isWorkerStopped = checkStopWorker();
                 if (isWorkerStopped) {
-                    console.log("stopworker is true from the dashboard stopLocalRecording so gonna call getUrl and getmergedurl");
-                    await getUrl();
+                  console.log("All chunks uploaded ");
 
-                    if (!urlsRef.current) {
-                        console.log("urlsref is nuill");
-                        return;
-                    }
-                    await getMergedUrl(urlsRef.current);
-                    break;
+                  try {
+                    console.log("calling start_processing");
+                    await axios.post(`${BackendUrl}/api/start_processing`, {
+                      sessionId: sessionIdRef.current,
+                      userEmail: localStorage.getItem("userEmail"),
+                    });
+
+                    toast.success(
+                      "Processing started. You'll receive email after completion",
+                    );
+                  } catch (error) {
+                    console.log(error);
+                    toast.error("Failed to start processing");
+                  }
+
+                  break;
                 }
-                await new Promise((r) => setTimeout(r, 1000));
-            }
-            setIsUploading(false);
-        }
-        
+
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+
+      setIsUploading(false);
     }
+  }
 
-    
-    async function getUrl() {
-        try {
-            console.log("sessionIdRef from the geturl function",sessionIdRef.current);
-            const sessionId = sessionIdRef.current;
-            const res = await axios.post(`${BackendUrl}/api/get_url`, { sessionId: sessionId }, {
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            })
 
-            console.log(res.data);
-            urlsRef.current = res.data.urls;
-        } catch (error) {
-            toast.error("got error while while uploading the urls");
-            console.log("error occured bhahu", error);
-        }
-    }
-
-    async function getMergedUrl(urls: string[]) {
-        try {
-            const sessionId = sessionIdRef.current;
-
-            if (urls.length == 0) {
-                console.log("urls length is 0 bro check it out");
-                return;
-            }
-
-            const finalurl = await axios.post(`${BackendUrl}/api/get_merged_url`, { session_Id: sessionId, urlF: urls });
-            console.log("finalurl from getMergedUrl", finalurl);
-
-        } catch (error) {
-            toast.error("got error while while uploading the urls");
-            console.log("error from the getMergedUrl", error);
-        }
-    }
-
-    return {
-            room,
-            setRoom,
-            localTrack,
-            localAudioTrack,
-            remoteTracks,
-            screenTrack,
-            isScreenShareStarted,
-            isScreenSharedByOthers,
-            isRecordingStarted,
-            isUploading,
-            joinRoom,
-            leaveRoom,
-            handleRecording,
-            handleScreenSharing,
-            participantCount
-        
-        };
-
-} 
+  return {
+    room,
+    setRoom,
+    localTrack,
+    localAudioTrack,
+    remoteTracks,
+    screenTrack,
+    isScreenShareStarted,
+    isScreenSharedByOthers,
+    isRecordingStarted,
+    isUploading,
+    joinRoom,
+    leaveRoom,
+    handleRecording,
+    handleScreenSharing,
+    participantCount,
+  };
+}

@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import Footer from "../components/Footer";
 import { AnimatedTooltip } from "@/components/ui/animated-tooltip";
 import { Ripple } from "@/components/magicui/ripple";
-import { SparklesCore } from "@/components/ui/sparkles";
 import { useNavigate } from "react-router-dom";
 
 const people = [
@@ -89,16 +88,8 @@ export default function LandingPage(){
 
             <div className="xl:h-screen flex items-center justify-center max-w-screen mx-auto bg-neutral-300 dark:bg-neutral-900" id="features">
                 <div className="relative">
-                         <SparklesCore
-                            id="tsparticlesfullpage"
-                            background="transparent"
-                            minSize={0.6}
-                            maxSize={1.4}
-                            particleDensity={100}
-                            className="w-full h-full absolute"
-                            particleColor="#FFFFFF"
-                        />
                         <h1 className="text-center text-6xl font-bold text-neutral-600 dark:text-neutral-900 text-shadow-md  dark:text-shadow-blue-500 mt-8 md:mt-0">WHY RECIO?</h1>
+                        
                          <div className="md:flex gap-2 justify-center mt-8 backdrop-blur-2xl">
                             <Feature heading="Local Recording" description="Each participant's audio/video is recorded locally in full quality before upload" size="sm" svg={<Mic />}/>
 

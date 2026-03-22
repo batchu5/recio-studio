@@ -78,7 +78,8 @@ export default function Controls() {
                             Start recording
                         </Button > :
                         <Button className="bg-neutral-800 text-white hover:bg-neutral-600 cursor-pointer">End recording</Button>
-                    }</div>
+                    }
+                </div>
             </div>
         )}
 

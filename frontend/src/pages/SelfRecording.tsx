@@ -58,7 +58,7 @@ export default function SelfRecording() {
   };
 
   const handleGetUrl = async() => {
-      const result = await axios.post("http://localhost:3000/get_url", {session_id: sessionIdRef.current});
+    const result = await axios.post("http://localhost:3000/get_url", {session_id: sessionIdRef.current});
 
     console.log(result);
   }
