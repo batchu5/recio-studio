@@ -9,7 +9,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const connection = {
-  url: "redis://REDACTED",
+  url: process.env.REDIS_URL || "",
 };
 
 const prisma = new PrismaClient();
