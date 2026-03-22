@@ -28,7 +28,6 @@ export  function useRoomManager(){
 
     const token = searchParams.get("token");
     const role = searchParams.get("role");
-    const urlsRef = useRef<string[] | null>([]);
     const [isUploading, setIsUploading] = useState(false);
     const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_WSURL;
     const participantCount = useRef<number>(0);
