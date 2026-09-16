@@ -13,8 +13,10 @@ import { PrismaClient } from '../../src/generated/prisma/client.js';
 import { Queue } from "bullmq";
 import {Redis} from "ioredis";
 
+dotenv.config();
+
 const connection = {
-  url: "redis://REDACTED",
+  url: process.env.REDIS_URL || "",
 };
 
 // const connection = new Redis("");
