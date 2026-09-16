@@ -9,6 +9,7 @@ import { router } from "./selfRecording/controller.js";
 import axios from "axios";
 import type { JwtPayload } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
+import "./worker/worker.js";
 
 const app = express();
 const prisma = new PrismaClient();

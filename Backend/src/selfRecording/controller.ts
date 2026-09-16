@@ -265,28 +265,40 @@ router.post("/upload_chunk", upload.single("blob"), async(req, res) => {
 
 router.post("/start_processing", async (req, res) => {
   const { sessionId, userEmail } = req.body;
-  console.log("inside the /start_processing");
+  console.log(`[HTTP /start_processing] Request received. sessionId: ${sessionId}, userEmail: ${userEmail}`);
+  console.log(`[HTTP /start_processing] REDIS_URL status: ${process.env.REDIS_URL ? "CONFIGURED (" + process.env.REDIS_URL.split('@').pop() + ")" : "MISSING (using default localhost)"}`);
 
   if (!sessionId) {
+    console.warn("[HTTP /start_processing] Error: sessionId is required");
     return res.status(400).json({ error: "sessionId is required" });
   }
 
   try {
-    await videoQueue.add("process-recording", {
+    console.log(`[HTTP /start_processing] Adding job 'process-recording' to videoQueue for session: ${sessionId}...`);
+    
+    // Set timeout safeguard so server response won't hang forever if Redis is down
+    const addJobPromise = videoQueue.add("process-recording", {
       sessionId,
       userEmail,
     });
 
-    console.log("Job added to queue for session:", sessionId);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Redis queue timeout: videoQueue.add took longer than 10 seconds. Check REDIS_URL and connection settings.")), 10000)
+    );
+
+    const job = await Promise.race([addJobPromise, timeoutPromise]) as any;
+
+    console.log(`[HTTP /start_processing] ✅ Successfully added job to queue! Job ID: ${job.id}`);
 
     res.json({
       status: "processing",
       message: "Recording processing started",
+      jobId: job.id,
     });
 
-  } catch (error) {
-    console.error("Failed to add job:", error);
-    res.status(500).json({ error: "Failed to start processing" });
+  } catch (error: any) {
+    console.error("[HTTP /start_processing] ❌ Failed to add job to queue:", error);
+    res.status(500).json({ error: "Failed to start processing", details: error.message });
   }
 });
 
