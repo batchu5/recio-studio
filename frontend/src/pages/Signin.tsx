@@ -6,10 +6,12 @@ import { userIdAtom } from "../atoms/userId";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-toastify";
+import { Loader2 } from "lucide-react";
 
 export default function Signin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const setUserId = useSetRecoilState(userIdAtom)
   const navigate = useNavigate();
@@ -17,6 +19,7 @@ export default function Signin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const response = await axios.post(`${BackendUrl}/signin`, {
         email,
@@ -52,6 +55,8 @@ export default function Signin() {
           toast.error("Something went wrong pls try again after some time")
           console.error("Error:", err.message);
         }
+      } finally {
+        setLoading(false);
       }
   };
 
@@ -88,7 +93,20 @@ export default function Signin() {
 
                 <div className="text-xs cursor-pointer hover:text-black dark:hover:text-cyan-300 text-neutral-500 text-right mt-1" onClick={() => {navigate("/forgotpassword")}}>Forget Password</div>
 
-                <Button className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300" onSubmit={handleSubmit}>Login</Button>
+                <Button 
+                  type="submit" 
+                  disabled={loading} 
+                  className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Logging in...
+                    </>
+                  ) : (
+                    "Login"
+                  )}
+                </Button>
                 <div className="mt-1 text-neutral-500 "> Don't have an account? <span className="text-black dark:text-cyan-300 hover:text-cyan-500 cursor-pointer" onClick={() => {navigate("/signup")}}>Signup</span> </div>
               </form>
 

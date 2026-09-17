@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { Loader2 } from "lucide-react";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -45,8 +46,15 @@ export default function ForgotPassword() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <Button type="submit" className="w-full mt-4" disabled={loading}>
-          {loading ? "Sending..." : "Send Code"}
+        <Button type="submit" className="w-full mt-4 flex items-center justify-center gap-2 cursor-pointer" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Sending...
+            </>
+          ) : (
+            "Send Code"
+          )}
         </Button>
       </form>
     </div>

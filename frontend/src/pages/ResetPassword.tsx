@@ -3,6 +3,7 @@ import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "react-toastify";
+import { Loader2 } from "lucide-react";
 
 const ResetPassword: React.FC = () => {
   const [newPassword, setNewPassword] = useState<string>("");
@@ -62,8 +63,15 @@ const ResetPassword: React.FC = () => {
           onChange={(e) => setNewPassword(e.target.value)}
           required
         />
-        <Button type="submit" className="w-full mt-4" disabled={loading}>
-          {loading ? "Resetting..." : "Reset Password"}
+        <Button type="submit" className="w-full mt-4 flex items-center justify-center gap-2 cursor-pointer" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Resetting...
+            </>
+          ) : (
+            "Reset Password"
+          )}
         </Button>
       </form>
     </div>

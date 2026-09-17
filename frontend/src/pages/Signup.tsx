@@ -6,10 +6,12 @@ import { userIdAtom } from "../atoms/userId";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-toastify";
+import { Loader2 } from "lucide-react";
 
 export default function Signin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const setUserId = useSetRecoilState(userIdAtom)
   const navigate = useNavigate();
@@ -17,6 +19,7 @@ export default function Signin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const response = await axios.post(`${BackendUrl}/signup`, {
         email,
@@ -53,6 +56,8 @@ export default function Signin() {
             toast.error("Something went wrong pls try again after some time")
             console.error("Error:", err.message);
           }
+        } finally {
+          setLoading(false);
         }
     };
   
@@ -70,7 +75,7 @@ export default function Signin() {
               <h3 className="mb-6 text-neutral-400 text-center">Sign up to continue to Recio</h3>
 
               <form onSubmit={handleSubmit} className="">
-                <Button className="w-full cursor-pointer" variant={"outline"} onClick={() => {
+                <Button type="button" className="w-full cursor-pointer" variant={"outline"} onClick={() => {
                      window.location.href = `${BackendUrl}/auth/google`;
                   }}>
                   <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png" className="w-6 h-6" />
@@ -93,7 +98,20 @@ export default function Signin() {
                     required
                   />
                 </div>
-                <Button className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300" onSubmit={handleSubmit}>Sign up</Button>
+                <Button 
+                  type="submit" 
+                  disabled={loading} 
+                  className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Signing up...
+                    </>
+                  ) : (
+                    "Sign up"
+                  )}
+                </Button>
                 <div className="mt-1 text-neutral-500"> Already have an account? <span className="text-black dark:text-cyan-300 hover:text-cyan-500 cursor-pointer" onClick={() => {navigate("/signin")}}>Signin</span></div>
 
               </form>
