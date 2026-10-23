@@ -1,15 +1,23 @@
 
+import "dotenv/config";
 import express from "express";
+import crypto from "crypto";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import cors from "cors";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { AccessToken, WebhookReceiver } from "livekit-server-sdk";
+import { AccessToken } from "livekit-server-sdk";
 import { router } from "./selfRecording/controller.js";
 import axios from "axios";
 import type { JwtPayload } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
-import "./worker/worker.js";
+import { requireAuth, signAuthToken } from "./middlewares/AuthMiddleware.js";
+
+// Video processing is CPU heavy, so in production run it as its own process
+// (`npm run worker`) and set RUN_WORKER_IN_API=false here.
+if (process.env.RUN_WORKER_IN_API !== "false") {
+  await import("./worker/worker.js");
+}
 
 const app = express();
 const prisma = new PrismaClient();
@@ -52,6 +60,7 @@ app.get("/auth/google/callback", async (req, res) => {
 
   const { id_token } = tokenRes.data;
 
+  // The id_token came straight from Google's token endpoint over TLS, so decoding is enough here.
   const decoded = jwt.decode(id_token);
 
   if (!decoded || typeof decoded === "string" || !("email" in decoded)) {
@@ -68,13 +77,16 @@ app.get("/auth/google/callback", async (req, res) => {
     user = await prisma.user.create({
       data: {
         email: userEmail,
-        password: "dummy", 
+        // Google users have no password; store an unguessable hash so password sign-in can never match.
+        password: await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10),
       },
     });
   }
 
-  console.log("email", userEmail)
-  res.redirect(`${Frontend_url}/auth/callback/?token=${id_token}&participantName=${userEmail}`);
+  // Issue our own token instead of forwarding Google's. It goes in the URL fragment,
+  // which browsers never send to servers, so it does not end up in access logs.
+  const params = new URLSearchParams({ token: signAuthToken(user), email: user.email, userId: user.id });
+  res.redirect(`${Frontend_url}/auth/callback#${params.toString()}`);
   
 });
 
@@ -97,12 +109,7 @@ app.post("/signup", async (req, res) => {
       },
     });
 
-    if(!JWT_SECRET){
-      res.json({"error" : "jsonwebtoken is missing"});
-      return;
-    }
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET);
-    console.log("User Signed up");
+    const token = signAuthToken(user);
     res.json({ token, user: { id: user.id, email: user.email } });
 
   } catch (err) {
@@ -120,13 +127,7 @@ app.post("/signin", async (req, res) => {
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return res.status(400).json({ error: "Invalid credentials" });
 
-    if(!JWT_SECRET){
-      res.json({"error" : "jsonwebtoken is missing"});
-      return;
-    }
-    
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "1h" });
-    console.log("Nee valle na")
+    const token = signAuthToken(user);
     res.json({ token, user: { id: user.id, email: user.email } });
   } catch (err) {
     res.status(500).json({ error: err });
@@ -217,128 +218,85 @@ const createToken = async ({roomName, participantId, role} : {roomName : string,
 };
 
 
-app.post('/getToken', async (req, res) => {
+app.post('/getToken', requireAuth, async (req, res) => {
   try {
-    const role= req.body.role;
-    const participantName = req.body.participantName;
-    let roomName;
+    const role = req.body.role === "creator" ? "creator" : "guest";
+    const participant = req.user!;
     let room;
-    let participantId;
-
-    console.log("going to check");
-    const participant = await prisma.user.findUnique({
-      where: { email: participantName },
-    });
-
-    if (!participant) {
-      console.log("participant not found");
-      return res.status(400).json({ error: "Participant does not exist" });
-    }
-    participantId = participant.id;
-
 
     if (role === "creator") {
-      console.log("role = creator");
-      roomName = req.body.roomName;
-      
+      const roomName = typeof req.body.roomName === "string" ? req.body.roomName.trim() : "";
+      if (!roomName || roomName.length > 60) {
+        return res.status(400).json({ error: "Room name is required (max 60 characters)" });
+      }
+
       room = await prisma.room.create({
         data: {
           name: roomName,
-          createdBy: { connect: { id: participantId } },
-          participants: { connect: { id: participantId } },
+          createdBy: { connect: { id: participant.id } },
+          participants: { connect: { id: participant.id } },
         },
-        include: { createdBy: true, participants: true },
       });
+    } else {
+      // Anyone with the invite link (room id) can join as a guest.
+      const roomId = req.body.roomId;
 
-    }
-     else {
-      console.log("role = joiner");
-      const roomId = req.body.roomId; 
-
-      room = await prisma.room.findFirst({
+      room = await prisma.room.findUnique({
         where: { id: roomId },
-        include: { participants: true },
+        include: { participants: { where: { id: participant.id }, select: { id: true } } },
       });
 
       if (!room) {
         return res.status(400).json({ error: "Room does not exist" });
       }
 
-      const alreadyJoined = room.participants.some(p => p.id === participantId);
-
-      if (!alreadyJoined) {
-        room = await prisma.room.update({
+      if (room.participants.length === 0) {
+        await prisma.room.update({
           where: { id: room.id },
-          data: {
-            participants: { connect: { id : participantId } },
-          },
-          include: { participants: true },
+          data: { participants: { connect: { id: participant.id } } },
         });
       }
-      roomName = room.name
-
     }
-    console.log("participant:", participantName);
-    console.log("room:", room);
-    const token = await createToken({roomName , participantId: participantName , role });
-    res.json({ token, room, role });
 
-  } catch (error) {
+    // Use the room id as the LiveKit room name: names are only unique per creator.
+    const token = await createToken({ roomName: room.id, participantId: participant.email, role });
+    res.json({ token, room: { id: room.id, name: room.name }, role });
+
+  } catch (error: any) {
+    if (error?.code === "P2002") {
+      return res.status(409).json({ error: "You already have a room with this name" });
+    }
     console.error("Error in /getToken:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.post('/getRooms', async(req, res) => {
-  const { participantName } = req.body;
-
-  const fetchedRooms  = await prisma.user.findMany({
-    where: {
-      email: participantName
-    },
-    include:{
+app.post('/getRooms', requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user!.id },
+    include: {
       roomsCreated: true,
       roomsJoined: true
     }
-  })
+  });
 
-  if(!fetchedRooms){
-    console.log("No fetched room");
-    res.status(200).send("no availabele rooms");
-  }
-
-  console.log("We found the rooms bro", fetchedRooms)
   res.json({
-    "roomsCreated" : fetchedRooms[0]?.roomsCreated,
-    "roomsJoined" : fetchedRooms[0]?.roomsJoined
-  })
+    "roomsCreated" : user?.roomsCreated ?? [],
+    "roomsJoined" : user?.roomsJoined ?? []
+  });
+});
 
-})
-
-app.post("/prev_mixed_urls", async(req, res) => {
-    const {participantName } = req.body;
+app.post("/prev_mixed_urls", requireAuth, async (req, res) => {
     try{
-      const participant = await prisma.user.findFirst({
-        where: {email: participantName}
-      })
-      if(!participant){
-        console.log("No participant with that name");
-        res.json("no participant with that name from prev_mixed_urls");
-        return;
-      }
-      console.log("particpant", participant);
       const fetchMixedUrls = await prisma.recording.findMany({
           where: {
             type: "mixed",
             room: {
-              createdById: participant.id,
+              createdById: req.user!.id,
             },
-            
           },
           select: {
-            id: true,
             url: true,
-            createdAt: true,
             roomId: true,
             room: {
               select: {
@@ -346,36 +304,46 @@ app.post("/prev_mixed_urls", async(req, res) => {
               }
             }
           },
-      })
-      console.log("fetchedMexedUrls", fetchMixedUrls);
-      
+      });
+
       const fetchedUrls = fetchMixedUrls.map(room => ({url: room.url, roomName: room.room.name, roomId: room.roomId}));
-      console.log("fetchedUrls", fetchedUrls);
+      res.json({"fetchedUrls" :  fetchedUrls});
 
-      res.json({"fetchedUrls" :  fetchedUrls})
-      
     }catch(error){
-      console.log("got an error while fetching the mixed urls", error)
+      console.log("got an error while fetching the mixed urls", error);
+      res.status(500).json({ error: "Internal server error" });
     }
-})
+});
 
-app.post("/fetch_users_by_roomId", async(req, res) => {
-  const {roomId} = req.body;
-    const fetchedUsers = await prisma.room.findMany({
-      where: {id: roomId},
-      select: {
-        participants: true
-      }
-    })
+// Only people who were in a room can see who else was in it or download its recordings.
+async function isRoomMember(roomId: unknown, userId: string) {
+  if (typeof roomId !== "string") return false;
+  const room = await prisma.room.findFirst({
+    where: { id: roomId, participants: { some: { id: userId } } },
+    select: { id: true },
+  });
+  return room !== null;
+}
 
+app.post("/fetch_users_by_roomId", requireAuth, async (req, res) => {
+  const { roomId } = req.body;
+  if (!(await isRoomMember(roomId, req.user!.id))) {
+    return res.status(403).json({ error: "Not a participant of this room" });
+  }
 
-    console.log("fetchedUsers", fetchedUsers[0]?.participants);
-    res.json({"fetchedUsers": fetchedUsers[0]?.participants});
-    
-})
+  const room = await prisma.room.findUnique({
+    where: { id: roomId },
+    select: { participants: { select: { id: true, email: true } } },
+  });
 
-app.post("/fetch_url_by_userId_roomId_type", async(req, res) => {
+  res.json({"fetchedUsers": room?.participants ?? []});
+});
+
+app.post("/fetch_url_by_userId_roomId_type", requireAuth, async (req, res) => {
     const {roomId, userId, type} = req.body;
+    if (!(await isRoomMember(roomId, req.user!.id))) {
+      return res.status(403).json({ error: "Not a participant of this room" });
+    }
 
     const response = await prisma.recording.findFirst({
       where: {
@@ -388,9 +356,7 @@ app.post("/fetch_url_by_userId_roomId_type", async(req, res) => {
       }
     });
 
-    console.log("response url from fetch_url_by_userId_roomId_type", response);
     res.json(response);
-})
-
+});
 
 app.listen(3000, () => console.log(" Server running on http://localhost:3000"));

@@ -1,12 +1,15 @@
+import "dotenv/config";
 import { Worker } from "bullmq";
 import { PrismaClient } from "../../src/generated/prisma/client.js";
 import {
+  listChunks,
   mergeAndUpload,
+  mergeAndUploadComposite,
   mergeAndUploadSideBySide,
-} from "../selfRecording/controller.js";
+} from "../selfRecording/merge.js";
+import { groupSegments } from "../selfRecording/composite.js";
+import { chunkPrefix } from "../cloudinary.js";
 import { sendRecordingEmail } from "../mail.js";
-import dotenv from "dotenv";
-dotenv.config();
 
 const connection = {
   url: process.env.REDIS_URL || "",
@@ -39,6 +42,9 @@ const worker = new Worker("video-processing", async (job) => {
 
     const urls: string[] = [];
     const screenShareurls: string[] = [];
+    // For the combined video: each camera with its start time, and every screen share segment.
+    const cameras: { url: string; startedAt?: number | undefined }[] = [];
+    const screenSegments: ReturnType<typeof groupSegments> = [];
 
     for (let i = 0; i < room.participants.length; i++) {
       const p = room.participants[i];
@@ -50,13 +56,17 @@ const worker = new Worker("video-processing", async (job) => {
 
       console.log(`[Worker] Processing participant ${i + 1}/${room.participants.length}: ${p.email}`);
 
-      console.log(`[Worker] Merging main video chunks for prefix: ${sessionId}_${p.email}_`);
-      urls[i] = await mergeAndUpload(`${sessionId}_${p.email}_`);
+      const cameraPrefix = chunkPrefix(sessionId, p.email);
+      const cameraChunks = await listChunks(cameraPrefix);
+      urls[i] = await mergeAndUpload(cameraPrefix, cameraChunks);
       console.log(`[Worker] Main video result for ${p.email}: ${urls[i]}`);
+      if (urls[i] !== "not found") cameras.push({ url: urls[i]!, startedAt: cameraChunks[0]?.startedAt });
 
-      console.log(`[Worker] Merging screen share chunks for prefix: ${sessionId}_${p.email}-screen`);
-      screenShareurls[i] = await mergeAndUpload(`${sessionId}_${p.email}-screen`);
+      const screenPrefix = chunkPrefix(sessionId, `${p.email}-screen`);
+      const screenChunks = await listChunks(screenPrefix);
+      screenShareurls[i] = await mergeAndUpload(screenPrefix, screenChunks);
       console.log(`[Worker] Screen share result for ${p.email}: ${screenShareurls[i]}`);
+      screenSegments.push(...groupSegments(screenChunks));
     }
 
     console.log("[Worker] Updating database with individual recordings...");
@@ -95,7 +105,10 @@ const worker = new Worker("video-processing", async (job) => {
     let finalUrl: string | undefined = undefined;
 
     if (validUrls.length > 0) {
-      finalUrl = await mergeAndUploadSideBySide(validUrls);
+      // With a screen share, the video switches to the screen layout only while sharing.
+      finalUrl = screenSegments.length > 0
+        ? await mergeAndUploadComposite(cameras, screenSegments)
+        : await mergeAndUploadSideBySide(validUrls);
       console.log("[Worker] Side-by-side merge completed. Final URL:", finalUrl);
 
       if (finalUrl) {
@@ -129,7 +142,11 @@ const worker = new Worker("video-processing", async (job) => {
 
     return { urls, screenShareurls, finalUrl };
   }
-}, { connection });
+}, {
+  connection,
+  // Each job works in its own temp directory, so jobs can safely run in parallel.
+  concurrency: Number(process.env.WORKER_CONCURRENCY) || 1,
+});
 
 worker.on("ready", () => console.log("🟢 [Worker] BullMQ Worker connected to Redis and ready to receive jobs!"));
 worker.on("completed", (job) => console.log(`✅ [Worker] Job ${job.id} completed successfully!`));
