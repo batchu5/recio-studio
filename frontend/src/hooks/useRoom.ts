@@ -1,4 +1,4 @@
-import { checkStopWorker, saveChunk, startUploadWorker } from "@/utils/uploadworker";
+import { checkStopWorker, saveChunk, startUploadWorker, subscribeUploadStatus, type UploadStatus } from "@/utils/uploadworker";
 import axios from "axios";
 import { createLocalScreenTracks, RemoteAudioTrack, RemoteParticipant, RemoteTrack, RemoteTrackPublication, Room, RoomEvent, type AudioTrack, type LocalVideoTrack, type RemoteVideoTrack, type VideoTrack } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
@@ -33,6 +33,12 @@ export  function useRoomManager(){
     const participantCount = useRef<number>(0);
     const participantName = localStorage.getItem("participantName"); 
     const BackendUrl = import.meta.env.VITE_BACKEND_URL;
+    const [uploadStatus, setUploadStatus] = useState<UploadStatus>({ running: false, pending: 0, uploaded: 0 });
+
+    useEffect(() => subscribeUploadStatus(setUploadStatus), []);
+
+    // Leaving mid-recording or before every chunk reached the server would lose video.
+    const hasUnsavedRecording = isRecordingStarted || uploadStatus.running || uploadStatus.pending > 0;
 
     useEffect(() => {
         console.log("room is set for the user")
@@ -91,13 +97,15 @@ export  function useRoomManager(){
                         const stream = new MediaStream();
                         stream.addTrack(screenVideoTrack.mediaStreamTrack);
                         const screenRecorder = new MediaRecorder(stream, { "mimeType": "video/webm; codecs=vp8,opus" });
-                        const participantName = localStorage.getItem("userId") + "-screen" || "";
+                        const participantName = `${room.localParticipant.identity}-screen`;
+                        recorderMap.current[participantName] = screenRecorder;
+                        const startedAt = Date.now();
 
                         console.log("Gonna send the screenShare to the recorder may be");
                         screenRecorder.ondataavailable = async (event) => {
                             if (event.data.size > 0 && sessionIdRef.current) {
                                 const blob = event.data;
-                                await saveChunk(sessionIdRef.current, participantName, blob, "screenShare")
+                                await saveChunk(sessionIdRef.current, participantName, blob, "screenShare", startedAt)
                             }
                         }
 
@@ -133,6 +141,7 @@ export  function useRoomManager(){
     async function leaveRoom() {
 
         await room?.disconnect();
+        document.querySelectorAll("audio[data-remote-audio]").forEach((el) => el.remove());
 
         setRoom(undefined);
         setLocalTrack(undefined);
@@ -170,6 +179,7 @@ export  function useRoomManager(){
                     console.log("Remote audio subscribed", participant.identity, audioTrack);
                     const audioEl = document.createElement("audio");
                     audioEl.autoplay = true;
+                    audioEl.dataset.remoteAudio = "";
                     audioTrack.attach(audioEl);
                     document.body.appendChild(audioEl);
                 }
@@ -208,7 +218,7 @@ export  function useRoomManager(){
 
             if(pub.kind === "audio"){
                  const audioTrack = _track as RemoteAudioTrack;
-                audioTrack.detach();
+                audioTrack.detach().forEach((el) => el.remove());
             }
         });
 
@@ -302,7 +312,7 @@ export  function useRoomManager(){
         startLocalRecording(room);
     }
     
-    function startRecording(videoTrack: VideoTrack | RemoteVideoTrack, audioTrack: AudioTrack | RemoteAudioTrack, participantName: string) {
+    function startRecording(videoTrack: VideoTrack | RemoteVideoTrack, audioTrack: AudioTrack | RemoteAudioTrack, participantName: string, type: "camera" | "screenShare" = "camera") {
         setIsRecordinStarted(true);
         const stream = new MediaStream();
         if (videoTrack) {
@@ -314,10 +324,11 @@ export  function useRoomManager(){
         }
 
         const recorder = new MediaRecorder(stream, { "mimeType": "video/webm; codecs=vp8,opus" })
+        const startedAt = Date.now();
         recorder.ondataavailable = async (event) => {
             if (event.data.size > 0 && sessionIdRef.current) {
                 const blob = event.data;
-                await saveChunk(sessionIdRef.current, participantName, blob, "camera");
+                await saveChunk(sessionIdRef.current, participantName, blob, type, startedAt);
             }
         };
         recorder.start(5000);
@@ -353,7 +364,7 @@ export  function useRoomManager(){
 
         if (screenTrack) {
             const screenIdentity = `${identity}-screen`;
-            recorderMap.current[screenIdentity] = startRecording(screenTrack, localAudioTrack, screenIdentity);
+            recorderMap.current[screenIdentity] = startRecording(screenTrack, localAudioTrack, screenIdentity, "screenShare");
         }
 
     }
@@ -391,7 +402,6 @@ export  function useRoomManager(){
                     console.log("calling start_processing");
                     await axios.post(`${BackendUrl}/api/start_processing`, {
                       sessionId: sessionIdRef.current,
-                      userEmail: localStorage.getItem("userEmail"),
                     });
 
                     toast.success(
@@ -424,6 +434,8 @@ export  function useRoomManager(){
     isScreenSharedByOthers,
     isRecordingStarted,
     isUploading,
+    uploadStatus,
+    hasUnsavedRecording,
     joinRoom,
     leaveRoom,
     handleRecording,

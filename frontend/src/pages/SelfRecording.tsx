@@ -23,6 +23,7 @@ export default function SelfRecording() {
     });
 
 
+    const startedAt = Date.now();
     recorder.ondataavailable = async(e) => {
       if (e.data.size > 0) {
         chunksRef.current.push(e.data);
@@ -31,7 +32,7 @@ export default function SelfRecording() {
           console.log("sessionIdRef is null");
           return;
         }
-        await saveChunk(sessionIdRef.current, "123", e.data, "camera");
+        await saveChunk(sessionIdRef.current, "123", e.data, "camera", startedAt);
         
       }
     };

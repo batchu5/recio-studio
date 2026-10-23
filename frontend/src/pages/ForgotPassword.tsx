@@ -1,62 +1,45 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Loader2 } from "lucide-react";
+import { MailCheck } from "lucide-react";
+import { AuthLayout, Field, SubmitButton } from "@/components/auth/AuthLayout";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
   const BackendUrl = import.meta.env.VITE_BACKEND_URL;
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      const res = await axios.post(`${BackendUrl}/forgot-password`, {
-        email,
-      });
-      console.log("res", res);
-
-      toast.success("email sent successfully")
-    } catch (error: any) {
-      toast.error("The email is wrong")
+      await axios.post(`${BackendUrl}/forgot-password`, { email });
+      setSent(true);
+    } catch (err) {
+      toast.error(isAxiosError(err) && err.response?.status === 400 ? "No account uses this email." : "Couldn't send the email. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const backToSignIn = <Link to="/signin" className="font-medium text-neutral-950 underline underline-offset-4 dark:text-white">Back to sign in</Link>;
+
+  if (sent) {
+    return (
+      <AuthLayout title="Check your inbox" subtitle={`We sent a reset link to ${email}. It's valid for 15 minutes.`} footer={backToSignIn}>
+        <MailCheck className="mx-auto size-10 text-red-600 dark:text-red-400" />
+      </AuthLayout>
+    );
+  }
+
   return (
-    <div className="h-screen w-screen flex items-center justify-center">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white dark:bg-neutral-900 p-6 rounded-xl shadow-md w-96"
-      >
-        <div className="mb-2 text-lg font-semibold">
-          Enter your email to reset password
-        </div>
-        <Input
-          type="email"
-          placeholder="Enter your Email"
-          className="mt-2"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <Button type="submit" className="w-full mt-4 flex items-center justify-center gap-2 cursor-pointer" disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Sending...
-            </>
-          ) : (
-            "Send Code"
-          )}
-        </Button>
+    <AuthLayout title="Reset your password" subtitle="Enter your email and we'll send you a reset link." footer={backToSignIn}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Field id="email" label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" />
+        <SubmitButton loading={loading} loadingText="Sending…">Send reset link</SubmitButton>
       </form>
-    </div>
+    </AuthLayout>
   );
 }

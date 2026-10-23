@@ -1,147 +1,89 @@
-
 import VideoComponent from "./videoComponent";
-import Progress from "./ui/progressBar";
+import InviteLink from "./InviteLink";
 import { useEffect, useState } from "react";
 import { useRoom } from "./RoomContext";
-import { useSearchParams } from "react-router-dom";
+import { UserPlus } from "lucide-react";
+
+function gridShape(count: number, narrow: boolean) {
+    if (narrow) return { cols: count > 2 ? 2 : 1, rows: Math.ceil(count / (count > 2 ? 2 : 1)) };
+    const cols = count <= 1 ? 1 : count <= 4 ? 2 : count <= 9 ? 3 : 4;
+    return { cols, rows: Math.ceil(count / cols) };
+}
+
+function useIsNarrow() {
+    const [narrow, setNarrow] = useState(() => window.innerWidth < 640);
+    useEffect(() => {
+        const onResize = () => setNarrow(window.innerWidth < 640);
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
+    }, []);
+    return narrow;
+}
 
 export default function VideoGrid(){
-    const {screenTrack, localTrack, remoteTracks, isUploading, participantCount} = useRoom();
-    const participantName = localStorage.getItem("participantName");
-    const [searchParams] = useSearchParams();
-    const role = searchParams.get("role");
-    const [rows, setRows] = useState<number>(1);
-    const [cols, setCols] = useState<number>(1);
+    const {screenTrack, localTrack, remoteTracks, isScreenShareStarted} = useRoom();
+    const participantName = localStorage.getItem("participantName") || "You";
+    const roomId = localStorage.getItem("roomId");
+    const narrow = useIsNarrow();
 
-    useEffect(() => {
-            let count = (localTrack ? 1 : 0) +
-                remoteTracks.filter(rt => rt.trackPublications.kind === "video" && rt.trackPublications.source === "camera" ).length;
-    
-            console.log("remoteTracks from useEffect of counting the participants", remoteTracks);
-            console.log("count", count);
-            console.log("localTrack value from userEffect of participantcount", localTrack);
-            console.log("remote Tracks", remoteTracks.filter(rt => rt.trackPublications.kind === "video").length);
-            console.log("participant Count is changed");
-            calculateGrid(count, window.innerWidth, window.innerHeight);
-    }, [participantCount,remoteTracks, localTrack])
+    const remoteCameras = remoteTracks.filter(
+        (rt) => rt.trackPublications.kind === "video" && rt.trackPublications.source === "camera"
+    );
+    const screenOwner = isScreenShareStarted
+        ? participantName
+        : remoteTracks.find((rt) => rt.trackPublications.source === "screen_share")?.participantIdentity ?? "Someone";
 
-    useEffect(() => {
-        console.log("screenTrack is changes so may be I need to refresh the screen");
-    }, [screenTrack])
+    const tiles = [
+        ...(localTrack ? [<VideoComponent key="local" track={localTrack} participantIdentity={participantName} local />] : []),
+        ...remoteCameras.map((rt) => (
+            <VideoComponent
+                key={rt.trackPublications.trackSid}
+                track={rt.trackPublications.videoTrack!}
+                participantIdentity={rt.participantIdentity}
+            />
+        )),
+    ];
 
-    useEffect(() => {
-        console.log("isUploading is changed from videoGrid punction", isUploading)
-    },[isUploading])
-
-
-    function calculateGrid(n: number, containerWidth: number, containerHeight:number) {
-        if(n == 2 || n == 3){
-            console.log("number of people in the call is", n);
-            setRows(1);
-            setCols(2);
-            return;
-        }
-        let gridCols = Math.ceil(Math.sqrt(n));
-        let gridRows = Math.ceil(n / cols);
-        if (containerWidth > containerHeight) {
-            gridCols = Math.max(cols, rows);
-            gridRows = Math.ceil(n / cols);
-        } else {
-            gridCols = Math.max(rows, cols);
-            gridRows = Math.ceil(n / rows);
-        }
-        console.log("innerwidth", innerWidth);
-        console.log("innerHeight", innerHeight);
-        console.log("gridRows", gridRows);
-        console.log("gridCols", gridCols);
-        setRows(gridRows);
-        setCols(gridCols);
+    if (screenTrack) {
+        return (
+            <div className="flex h-full min-h-0 flex-col gap-3 md:flex-row">
+                <div className="min-h-0 flex-1">
+                    <VideoComponent track={screenTrack} participantIdentity={screenOwner} screen local={isScreenShareStarted} className="bg-black" />
+                </div>
+                <div className="flex shrink-0 gap-3 overflow-auto md:w-64 md:flex-col">
+                    {tiles.map((tile) => (
+                        <div key={tile.key} className="aspect-video w-48 shrink-0 md:w-full">{tile}</div>
+                    ))}
+                </div>
+            </div>
+        );
     }
 
-    return(
-        <div className="h-screen">
-        {screenTrack ? (
-                <div className="flex h-full ">
+    const { cols, rows } = gridShape(tiles.length, narrow);
+    const isAlone = remoteCameras.length === 0;
 
-                    <div className="flex-1 rounded-lg overflow-hidden">
-                        {role === "creator"&& isUploading  && 
-                        <div className="absolute z-10 w-screen flex justify-center mt-2">
-                            <div className="bg-neutral-900 px-2 py-4 rounded-xl">
+    return (
+        <div className="relative h-full min-h-0">
+            <div
+                className="grid h-full gap-3"
+                style={{
+                    gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                    gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+                }}
+            >
+                {tiles}
+            </div>
 
-                            <div className=" font-medium mb-2 text-center text-xl">
-                                Videos are uploading... <span className="font-semibold text-xl">Don’t leave the room</span>
-                            </div>
-                            <Progress value={40} indeterminate={true} className="h-3 rounded-lg" />
-                            </div>
-                            
-                        </div>
-                    }
-                        <VideoComponent
-                            track={screenTrack}
-                            participantIdentity={`${participantName || "You"} (Screen)`}
-                            local
-                        />
+            {isAlone && roomId && (
+                <div className="absolute bottom-4 left-4 w-[min(24rem,calc(100%-2rem))] rounded-2xl border border-white/10 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur">
+                    <div className="mb-1 flex items-center gap-2 text-sm font-medium text-white">
+                        <UserPlus className="size-4 text-red-400" />
+                        You're the only one here
                     </div>
-                    <div className="flex flex-col w-1/5 gap-2 ml-2 overflow-y-auto">
-
-                        {localTrack && (
-                            <VideoComponent
-                                track={localTrack}
-                                participantIdentity={participantName || "Test User"}
-                                local
-                            />
-                        )}
-                        {remoteTracks.map((remoteTrack) =>
-                            remoteTrack.trackPublications.kind === "video" && remoteTrack.trackPublications.source === "camera" ? (
-                                <VideoComponent
-                                    key={remoteTrack.trackPublications.trackSid}
-                                    track={remoteTrack.trackPublications.videoTrack!}
-                                    participantIdentity={remoteTrack.participantIdentity}
-                                />
-                            ) : null
-                            
-                        )}
-                    </div>
-                </div>
-            ) : (
-                <div className="relative h-screen w-screen ">
-                    {role === "creator"&& isUploading  && 
-                        <div className="absolute z-10 w-screen  flex justify-center mt-2">
-                            <div className="bg-neutral-900 px-2 py-4 rounded-xl">
-
-                            <div className=" font-medium mb-2 text-center text-xl">
-                                Videos are uploading... <span className="font-semibold text-xl">Don’t leave the room</span>
-                            </div>
-                            <Progress value={40} indeterminate={true} className="h-3 rounded-lg" />
-                            </div>
-                            
-                        </div>
-                    }
-                    
-                    <div className={`h-full w-full grid grid-flow-col grid-cols-${cols} gap-1 `}  >
-                        {localTrack && (
-                            <VideoComponent
-                                track={localTrack}
-                                participantIdentity={participantName || "Test User"}
-                                local
-                            />
-                        )}
-                        
-                        {remoteTracks.map((remoteTrack) =>
-                            remoteTrack.trackPublications.kind === "video" ? (
-                                    <VideoComponent
-                                    key={remoteTrack.trackPublications.trackSid}
-                                    track={remoteTrack.trackPublications.videoTrack!}
-                                    participantIdentity={remoteTrack.participantIdentity}
-                                />
-                            ) : null
-                        )}
-                        
-                    </div>
-                    
+                    <p className="mb-3 text-xs text-neutral-400">Share this link so others can join the session.</p>
+                    <InviteLink roomId={roomId} />
                 </div>
             )}
-            </div>
-        
+        </div>
     )
 }

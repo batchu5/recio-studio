@@ -1,19 +1,16 @@
 import React, { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { useSetRecoilState } from "recoil";
-import { userIdAtom } from "../atoms/userId";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import axios, { isAxiosError } from "axios";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Loader2 } from "lucide-react";
+import { AuthLayout, Field, GoogleButton, OrDivider, SubmitButton } from "@/components/auth/AuthLayout";
+import { saveSession, takeRedirect } from "@/lib/session";
 
-export default function Signin() {
+const MIN_PASSWORD = 8;
+
+export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const setUserId = useSetRecoilState(userIdAtom)
   const navigate = useNavigate();
   const BackendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -21,107 +18,38 @@ export default function Signin() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.post(`${BackendUrl}/signup`, {
-        email,
-        password,
-      });
-
-      setUserId(response.data.user.email);
-      console.log("participant email", response.data.user.email);
-
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("participantName", response.data.user.email);
-      localStorage.setItem("userId",response.data.user.id);
-      localStorage.setItem("userEmail", response.data.user.email);
-
-
-      if(localStorage.getItem("isFromProtectedRoute") ){
-        const item = localStorage.getItem("isFromProtectedRoute");
-        if(item != null){
-          localStorage.removeItem(item);
-          navigate(item);
-        }
-      }else{
-        navigate("/preStudio");
+      const response = await axios.post(`${BackendUrl}/signup`, { email, password });
+      saveSession(response.data.token, response.data.user);
+      navigate(takeRedirect());
+    } catch (err) {
+      if (isAxiosError(err) && err.response?.status === 400) {
+        toast.error("An account with this email already exists. Try signing in.");
+      } else if (isAxiosError(err) && !err.response) {
+        toast.error("Network error. Check your connection and try again.");
+      } else {
+        toast.error("Something went wrong. Please try again.");
       }
-
-    } catch (err: any) {
-          if (err.response) {
-            toast.error("server error");
-            console.error("Server error:", err.response.status, err.response.data);
-          } else if (err.request) {
-            toast.error("network error occured")
-            console.error("Network error:", err.message);
-          } else {
-            toast.error("Something went wrong pls try again after some time")
-            console.error("Error:", err.message);
-          }
-        } finally {
-          setLoading(false);
-        }
-    };
-  
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="h-screen w-screen flex justify-center items-center" >
-      <div className="rounded-xl ml-1 mb-1 bg-[linear-gradient(to_top_right,_black_10%,_white_20%_80%,_black_90%)] dark:bg-[linear-gradient(to_top_right,_#67e8f9_10%,_black_20%_80%,_#67e8f9_90%)]">
-
-          <div className="px-8 py-8 rounded-xl bg-neutral-100 dark:bg-black m-[1px] md:flex gap-2">
-            <div className="flex items-center justify-center basis-2/3">
-              <img src="https://img.freepik.com/free-photo/woman-with-headset-video-call_23-2148854900.jpg" className="md:w-[300px] md:h-[200px] rounded-xl"/>
-            </div>
-            <div className="pl-4 basis-1/2">
-              <h1 className="text-2xl text-center font-bold">Welcome </h1>
-              <h3 className="mb-6 text-neutral-400 text-center">Sign up to continue to Recio</h3>
-
-              <form onSubmit={handleSubmit} className="">
-                <Button type="button" className="w-full cursor-pointer" variant={"outline"} onClick={() => {
-                     window.location.href = `${BackendUrl}/auth/google`;
-                  }}>
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png" className="w-6 h-6" />
-                  Continue with Google
-                </Button>
-                <div className="text-center text-xl my-2">or </div>
-                <div>
-                  <label>Username</label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="email" />
-
-                </div>
-
-                <div>
-                  <label>Password</label>
-                  <Input
-                    placeholder="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  disabled={loading} 
-                  className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Signing up...
-                    </>
-                  ) : (
-                    "Sign up"
-                  )}
-                </Button>
-                <div className="mt-1 text-neutral-500"> Already have an account? <span className="text-black dark:text-cyan-300 hover:text-cyan-500 cursor-pointer" onClick={() => {navigate("/signin")}}>Signin</span></div>
-
-              </form>
-
-          </div>
-
-          </div>
-
-      </div>
-     </div>
-
+    <AuthLayout
+      title="Create your studio"
+      subtitle="Free plan includes 2 hours every month."
+      footer={<>Already have an account? <Link to="/signin" className="font-medium text-neutral-950 underline underline-offset-4 dark:text-white">Sign in</Link></>}
+    >
+      <GoogleButton />
+      <OrDivider />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Field id="email" label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" />
+        <div>
+          <Field id="password" label="Password" type="password" autoComplete="new-password" minLength={MIN_PASSWORD} value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">At least {MIN_PASSWORD} characters.</p>
+        </div>
+        <SubmitButton loading={loading} loadingText="Creating account…">Create account</SubmitButton>
+      </form>
+    </AuthLayout>
   );
 }

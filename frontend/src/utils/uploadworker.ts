@@ -8,6 +8,24 @@ const BackenUrl = import.meta.env.VITE_BACKEND_URL;
 let count = 0;
 let stopWorker = false;
 
+// Live upload progress for the UI: `pending` chunks are saved locally but not on the server yet.
+export type UploadStatus = { running: boolean; pending: number; uploaded: number };
+let status: UploadStatus = { running: false, pending: 0, uploaded: 0 };
+const listeners = new Set<(status: UploadStatus) => void>();
+
+function setStatus(patch: Partial<UploadStatus>) {
+  status = { ...status, ...patch };
+  listeners.forEach((listener) => listener(status));
+}
+
+export function subscribeUploadStatus(listener: (status: UploadStatus) => void) {
+  listeners.add(listener);
+  listener(status);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -39,7 +57,8 @@ export async function saveChunk(
   session_id: string,
   participant_id: string,
   blob: Blob,
-  type: "screenShare" | "camera"
+  type: "screenShare" | "camera",
+  startedAt: number
 ): Promise<number> {
     const db = await openDB();
     return new Promise<number>((resolve, reject) => {
@@ -50,10 +69,12 @@ export async function saveChunk(
         participant_id,
         blob,
         type,
+        startedAt,
         uploaded: 0
       });
 
       req.onsuccess = () => {
+        setStatus({ pending: status.pending + 1 });
         resolve(req.result as number);
       };
       req.onerror = () => reject(req.error);
@@ -87,24 +108,44 @@ async function getNextUnuploadedChunk(): Promise<any | null> {
   });
 }
 
-async function markChunkAsUploaded(id: number): Promise<void> {
+// Once a chunk is safely on the server there is no reason to keep the video in the browser.
+async function deleteChunk(id: number): Promise<void> {
   const db = await openDB();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
+    tx.objectStore(STORE_NAME).delete(id);
 
-    const getReq = store.get(id);
-    getReq.onsuccess = () => {
-      const chunk = getReq.result;
-      if (!chunk) {
-        resolve();
-        return;
-      }
-      chunk.uploaded = 1; 
-      const putReq = store.put(chunk);
-      putReq.onerror = () => reject(putReq.error);
+    tx.oncomplete = () => {
+      setStatus({ pending: Math.max(0, status.pending - 1), uploaded: status.uploaded + 1 });
+      resolve();
     };
-    getReq.onerror = () => reject(getReq.error);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+async function countPendingChunks(): Promise<number> {
+  const db = await openDB();
+  return new Promise<number>((resolve, reject) => {
+    const req = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).index("byUploaded").count(IDBKeyRange.only(0));
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// Older versions only flagged uploaded chunks instead of deleting them.
+async function purgeUploadedChunks(): Promise<void> {
+  const db = await openDB();
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const req = tx.objectStore(STORE_NAME).index("byUploaded").openCursor(IDBKeyRange.only(1));
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (cursor) {
+        cursor.delete();
+        cursor.continue();
+      }
+    };
 
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
@@ -120,9 +161,10 @@ async function uploadChunkToBackend(chunkData: any) {
     const formData = new FormData();
     formData.append("blob", chunkData.blob, `chunk_${chunkData.id}.webm`); 
     formData.append("session_id", chunkData.session_id);
-    formData.append("participant_id", chunkData.participant_id);
     formData.append("chunk_index", String(chunkData.id));
     formData.append("type", String(chunkData.type));
+    // When this chunk's recorder started, so the server can line tracks up on one timeline.
+    if (chunkData.startedAt) formData.append("started_at", String(chunkData.startedAt));
 
     console.log("sending the data to the backend");
 
@@ -145,6 +187,12 @@ export async function startUploadWorker() {
   }
 
   isUploading = 1;
+  // Reset state left over from a previous recording in this tab.
+  stopWorker = false;
+  count = 0;
+  setStatus({ running: true, uploaded: 0 });
+  await purgeUploadedChunks().catch((err) => console.error("Failed to purge old chunks", err));
+  setStatus({ pending: await countPendingChunks().catch(() => status.pending) });
 
   while (true) {
     console.log("worker is running");
@@ -163,6 +211,8 @@ export async function startUploadWorker() {
         console.log("count where count > 3", count);
         console.log("obviously you have stopped the recordin");
         stopWorker = true;
+        isUploading = 0;
+        setStatus({ running: false });
         break;
     }
 
@@ -172,7 +222,7 @@ export async function startUploadWorker() {
 
       if(!chunkData.id){continue}
       await uploadChunkToBackend(chunkData); 
-      await markChunkAsUploaded(chunkData.id);
+      await deleteChunk(chunkData.id);
       console.log(`Uploaded chunk ${chunkData.id}`);
     } catch (err) {
       console.error(` Upload failed for chunk , retrying in 5s...`, err);

@@ -27,7 +27,11 @@ export default function App() {
             <Route path="/signin" element={<Signin />} />
             <Route path="/forgotpassword" element={<ForgotPassword />} />
             <Route path="/reset-password" element ={<ResetPassword />}/>
-            <Route path="/preStudio" element={<PreStudio/>} />
+            <Route path="/preStudio" element={
+              <ProtectedRoute>
+                <PreStudio/>
+              </ProtectedRoute>
+            } />
 
 
             <Route
@@ -46,12 +50,16 @@ export default function App() {
               </ProtectedRoute>
             } />
 
-            <Route path="/preStudio/:roomId" element={<UniqueRoom />} />
+            <Route path="/preStudio/:roomId" element={
+              <ProtectedRoute>
+                <UniqueRoom />
+              </ProtectedRoute>
+            } />
             <Route path="/auth/callback/" element={<Callback />}/>
 
 
           </Routes>
-          <ToastContainer />
+          <ToastContainer position="top-center" theme={document.documentElement.classList.contains("dark") ? "dark" : "light"} />
 
         </Router>
       

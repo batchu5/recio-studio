@@ -1,19 +1,14 @@
 import React, { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { useSetRecoilState } from "recoil";
-import { userIdAtom } from "../atoms/userId";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import axios, { isAxiosError } from "axios";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Loader2 } from "lucide-react";
+import { AuthLayout, Field, GoogleButton, OrDivider, SubmitButton } from "@/components/auth/AuthLayout";
+import { saveSession, takeRedirect } from "@/lib/session";
 
 export default function Signin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const setUserId = useSetRecoilState(userIdAtom)
   const navigate = useNavigate();
   const BackendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -21,101 +16,40 @@ export default function Signin() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.post(`${BackendUrl}/signin`, {
-        email,
-        password,
-      });
-
-      setUserId(response.data.user.email);
-      console.log("participant email", response.data.user.email);
-
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("participantName", response.data.user.email);
-      localStorage.setItem("userId",response.data.user.id);
-      localStorage.setItem("userEmail", response.data.user.email);
-
-      if(localStorage.getItem("isFromProtectedRoute") ){
-        const item = localStorage.getItem("isFromProtectedRoute");
-        if(item != null){
-          localStorage.removeItem(item);
-          navigate(item);
-        }
-      }else{
-        navigate("/preStudio");
+      const response = await axios.post(`${BackendUrl}/signin`, { email, password });
+      saveSession(response.data.token, response.data.user);
+      navigate(takeRedirect());
+    } catch (err) {
+      if (isAxiosError(err) && err.response?.status === 400) {
+        toast.error("Wrong email or password.");
+      } else if (isAxiosError(err) && !err.response) {
+        toast.error("Network error. Check your connection and try again.");
+      } else {
+        toast.error("Something went wrong. Please try again.");
       }
-      
-    } catch (err: any) {
-        if (err.response) {
-          toast.error("server error");
-          console.error("Server error:", err.response.status, err.response.data);
-        } else if (err.request) {
-          toast.error("network error occured")
-          console.error("Network error:", err.message);
-        } else {
-          toast.error("Something went wrong pls try again after some time")
-          console.error("Error:", err.message);
-        }
-      } finally {
-        setLoading(false);
-      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="h-screen w-screen flex justify-center items-center ">
-      <div className="rounded-xl ml-1 mb-1 bg-[linear-gradient(to_top_right,_black_10%,_white_20%_80%,_black_90%)] dark:bg-[linear-gradient(to_top_right,_#67e8f9_10%,_black_20%_80%,_#67e8f9_90%)]">
-
-          <div className="px-8 py-8 rounded-xl bg-neutral-100 dark:bg-black m-[1px] md:flex gap-2">
-            <div className="flex items-center justify-center basis-2/3">
-              <img src="https://img.freepik.com/free-photo/woman-with-headset-video-call_23-2148854900.jpg" className="md:w-[300px] md:h-[200px] rounded-xl"/>
-            </div>
-            <div className="pl-4 basis-1/2">
-              <h1 className="text-2xl text-center font-bold">Welcome back</h1>
-              <h3 className="mb-6 text-neutral-400">Login to your account to continue</h3>
-
-              <form onSubmit={handleSubmit} className="">
-                <div>
-                  <label>Username</label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="email" />
-
-                </div>
-
-                <div>
-                  <label>Password</label>
-                  <Input
-                    placeholder="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-
-                <div className="text-xs cursor-pointer hover:text-black dark:hover:text-cyan-300 text-neutral-500 text-right mt-1" onClick={() => {navigate("/forgotpassword")}}>Forget Password</div>
-
-                <Button 
-                  type="submit" 
-                  disabled={loading} 
-                  className="w-full mt-4 bg-[#099DA6] hover:bg-cyan-300 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Logging in...
-                    </>
-                  ) : (
-                    "Login"
-                  )}
-                </Button>
-                <div className="mt-1 text-neutral-500 "> Don't have an account? <span className="text-black dark:text-cyan-300 hover:text-cyan-500 cursor-pointer" onClick={() => {navigate("/signup")}}>Signup</span> </div>
-              </form>
-
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Sign in to your studio."
+      footer={<>Don't have an account? <Link to="/signup" className="font-medium text-neutral-950 underline underline-offset-4 dark:text-white">Sign up</Link></>}
+    >
+      <GoogleButton />
+      <OrDivider />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Field id="email" label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" />
+        <div>
+          <Field id="password" label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <div className="mt-2 text-right">
+            <Link to="/forgotpassword" className="text-sm text-neutral-500 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white">Forgot password?</Link>
           </div>
-
-          </div>
-
-      </div>
-     </div>
-
+        </div>
+        <SubmitButton loading={loading} loadingText="Signing in…">Sign in</SubmitButton>
+      </form>
+    </AuthLayout>
   );
 }

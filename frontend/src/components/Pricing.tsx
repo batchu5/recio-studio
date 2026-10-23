@@ -1,65 +1,47 @@
-import Tick from "@/assets/Tick"
-import { Button } from "./ui/button"
-import NumberTicker from "./NumberTicker"
+import { Check } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+
+const included = [
+    { title: "Local recording", body: "Every guest recorded on their own device." },
+    { title: "Separate tracks", body: "Each person's camera and screen as their own file." },
+    { title: "Background uploads", body: "Saved as you go, safe through Wi-Fi drops." },
+    { title: "Invite with a link", body: "Guests join from the browser, nothing to install." },
+    { title: "Screen sharing", body: "Recorded as its own track next to the cameras." },
+    { title: "Email when it's ready", body: "We merge the tracks and send you the link." },
+]
 
 export default function PricingSection(){
+    const navigate = useNavigate();
+    const signedIn = Boolean(localStorage.getItem("token"));
+
     return (
-        <div className="md:flex md:justify-center md:items-center md:gap-4">
-            <PricingElement planType="free" money="0" bestFor="individuals testing our platform" features={["Record up to 2 hours/month in multiple instance", "720p video and 128 kbps audio", "1 host + 1 guest", "Standard video/audio export"]} main={"bg-neutral-600 dark:bg-linear-to-b from-neutral-400 to-neutral-300"} className="bg-neutral-400 dark:bg-linear-to-tr from-black to-white from-60%" mainBlob="right-0 top-0" insideBlob="w-32 h-32" mostPopular={false} suitableFor={"Start free"}/>
+        <div className="mx-auto max-w-4xl text-center">
+            <p className="text-xs font-semibold tracking-[0.2em] text-neutral-500 uppercase dark:text-neutral-400">Pricing</p>
+            <h2 className="mt-4 font-serif text-4xl leading-tight text-neutral-950 sm:text-5xl dark:text-white">
+                The free plan:<br />2 hours every month.
+            </h2>
+            <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-400">Every feature included. No card required.</p>
 
-            <PricingElement planType="professional" money="15" bestFor="Ideal for creators and small teams" features={["Record up to 20 hours/month","1080p video and 256 kbps audio ", "Up to 4 participants per recording", "Flexible recording: single or multi-track" ]} 
-                main={"bg-blue-500 dark:bg-linear-to-b from-blue-500 to-blue-400"} className="bg-neutral-400 dark:bg-linear-to-t from-black to-white from-60%  justify-center" mainBlob="top-0 left-1" insideBlob="w-108 h-40" mostPopular={true} suitableFor="small teams" />
-
-            <PricingElement planType="enterprise" money="99" bestFor="For studios, large teams" features={["Unlimited recording hours", 
-                "4K video Support", "Unlimited participants per session","Team collaboration & role-based access", ]} main={"bg-emerald-600 dark:bg-linear-to-b from-emerald-600 to-emerald-400"} className="bg-neutral-400 dark:bg-linear-to-tl from-black to-white from-60% justify-end" insideBlob="w-32 h-32" mainBlob="top-0 left-0" 
-                mostPopular={false} suitableFor="contact us"/>
-
-        </div>
-    )
-}
-
-interface pricingProps{
-    planType : string,
-    money: string,
-    bestFor: string,
-    features: string[],
-    main : string,
-    className : string,
-    mainBlob : string,
-    insideBlob : string,
-    mostPopular : boolean,
-    suitableFor : string
-}
-function PricingElement({planType, money, bestFor, features,main, className, mainBlob, insideBlob, mostPopular, suitableFor}: pricingProps){
-    return (
-        <div className={`mt-4 min-w-screen md:min-w-0 w-[351px] md:h-fit  md:flex md:items-end rounded-2xl ${className}`}>
-            <div className={`min-w-screen md:min-w-0 w-[350px] md:h-fit bg-neutral-100 dark:bg-neutral-900 rounded-2xl p-8 m-0.5 md:relative`}>
-                <div className={`md:absolute ${mainBlob}`}>
-                    <div className={` rounded-full bg-neutral-300 dark:bg-white/20 filter blur-2xl  ${insideBlob}`}></div>
-                </div>
-                <div className="text-3xl capitalize mb-8 text-neutral-300 flex justify-between">
-                    <div>
-                        <div className="text-sm text-green-800 dark:text-green-400">{suitableFor}</div>
-                        <div className="text-neutral-700 dark:text-neutral-300">{planType}</div>
-                    </div>
-
-                    <div className={`${mostPopular ? "text-xl backdrop-blur-xl px-4 py-2 rounded-3xl text-neutral-600 dark:text-neutral-300 border-1 border-neutral-700 dark:border-neutral-400/20" : "opacity-0"} flex items-center`}>most popular</div>
-                </div>
-                <NumberTicker className="text-5xl mb-4 font-semibold" from={0} to={Number(money)}/>
-                <div className="capitalize text-2xl mt-6 text-neutral-800 dark:text-neutral-500">{bestFor}</div>
-                <Button className={`w-full ${main}  my-12 border-[0.5px] border-blue-400" variant={"ghost"}`} size="lg">Sign up for {planType}</Button>
-                <div className="flex items-center justify-center gap-2">
-                    <div className="text-xl font-bold">Features</div>    
-                </div>
-                <div className="text-2xl font-light mt-4">
-                    {features.map((feature) => 
-                        <div className="flex my-4 ">
-                            <Tick />{feature}
+            <ul className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-200 text-left sm:grid-cols-2 lg:grid-cols-3 dark:border-neutral-800 dark:bg-neutral-800">
+                {included.map((item) => (
+                    <li key={item.title} className="flex gap-3 bg-white p-6 dark:bg-neutral-950">
+                        <Check className="mt-0.5 size-4 shrink-0 text-red-600 dark:text-red-400" />
+                        <div>
+                            <p className="font-medium text-neutral-950 dark:text-white">{item.title}</p>
+                            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{item.body}</p>
                         </div>
-                    )}
-                </div>
-            </div>
+                    </li>
+                ))}
+            </ul>
+
+            <button
+                type="button"
+                onClick={() => navigate(signedIn ? "/preStudio" : "/signup")}
+                className="mt-10 inline-flex cursor-pointer items-center rounded-full bg-red-600 px-7 py-3 font-medium text-white transition-colors hover:bg-red-500"
+            >
+                Start recording for free
+            </button>
+            <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">Need more hours? Pro is $15/month.</p>
         </div>
     )
 }
-

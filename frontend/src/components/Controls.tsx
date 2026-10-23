@@ -1,91 +1,116 @@
-import { MicOff, Video, VideoOff, Mic, ScreenShare, PhoneOff, Disc2 } from "lucide-react";
-import { Button } from "./ui/button";
-import { useEffect, useState } from "react";
+import { MicOff, Video, VideoOff, Mic, ScreenShare, ScreenShareOff, PhoneOff, Circle, Square } from "lucide-react";
+import { useState } from "react";
 import { LocalAudioTrack, LocalVideoTrack } from "livekit-client";
 import { useRoom } from "./RoomContext";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
+
+// Red is reserved for recording and leaving. A muted mic or camera shows as a
+// white button with a crossed-out icon instead, so it's never mistaken for those.
+function ControlButton({ label, active = false, danger = false, disabled = false, onClick, children, className }: {
+    label: string,
+    active?: boolean,
+    danger?: boolean,
+    disabled?: boolean,
+    onClick: () => void,
+    children: React.ReactNode,
+    className?: string,
+}) {
+    return (
+        <button
+            type="button"
+            title={label}
+            aria-label={label}
+            aria-pressed={active}
+            disabled={disabled}
+            onClick={onClick}
+            className={cn(
+                "inline-flex h-12 min-w-12 cursor-pointer items-center justify-center gap-2 rounded-full px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-5",
+                danger ? "bg-red-600 text-white hover:bg-red-500" : active ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-white/10 text-white hover:bg-white/15",
+                className
+            )}
+        >
+            {children}
+        </button>
+    );
+}
 
 export default function Controls() {
     const [isMicOn, setIsMicOn] = useState(true);
     const [isvideoOn, setIsVideoOn] = useState(true);
-    const { localAudioTrack, localTrack, handleScreenSharing, isScreenShareStarted, isScreenSharedByOthers, handleRecording, isRecordingStarted, leaveRoom, isUploading } = useRoom();
+    const { localAudioTrack, localTrack, handleScreenSharing, isScreenShareStarted, isScreenSharedByOthers, handleRecording, isRecordingStarted, leaveRoom, hasUnsavedRecording } = useRoom();
     const [searchParams] = useSearchParams();
     const role = searchParams.get("role")
-
-    useEffect(() => {
-        console.log("video is changed I should make it mute or unmute")
-    }, [isvideoOn])
-
-    useEffect(() => {
-        console.log("Mic is changed I should make it mute or unmute");
-    }, [isMicOn])
+    const navigate = useNavigate();
 
     async function handleMic() {
+        if (!localAudioTrack) return;
         if (isMicOn) {
-            console.log("mic is on");
             setIsMicOn(false);
             await (localAudioTrack as LocalAudioTrack).mute();
-            console.log("localTrack after marking it as on", localAudioTrack);
         } else {
-            console.log("mic is off")
             setIsMicOn(true);
             await (localAudioTrack as LocalAudioTrack).unmute();
-            console.log("localtrack after marking it as off", localAudioTrack);
         }
     }
 
     async function handleVideo() {
+        if (!localTrack) return;
         if (isvideoOn) {
-            console.log("video is on");
             setIsVideoOn(false);
             await (localTrack as LocalVideoTrack).mute();
-            console.log("localTrack after marking it as on", LocalVideoTrack);
         } else {
-            console.log("video is off");
             setIsVideoOn(true);
             await (localTrack as LocalVideoTrack).unmute();
-            console.log("localTrack after marking it as off", LocalVideoTrack);
         }
     }
 
-    return <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-2  px-4 py-2 rounded-2xl shadow-lg ">
-        <Button onClick={handleMic} className="bg-neutral-800 hover:bg-neutral-600 cursor-pointer">
-            {isMicOn ? <Mic className=" hover:bg-cyan-600 text-white" /> : <MicOff className="text-white" />}
-        </Button>
-        <Button onClick={handleVideo} className="bg-neutral-800 hover:bg-neutral-600 cursor-pointer">
-            {isvideoOn ? <Video className="text-white" /> : <VideoOff className="text-white" />}
-        </Button>
+    async function handleLeave() {
+        await leaveRoom();
+        navigate("/preStudio");
+    }
 
-        <div onClick={handleScreenSharing}>
-            {
-                !isScreenShareStarted ?
-                    <Button disabled={isScreenSharedByOthers} className="bg-neutral-800 text-white hover:bg-neutral-600 cursor-pointer">
-                        <ScreenShare className="text-white" />
-                        Screen Share
-                    </Button> :
-                    <Button disabled={isScreenSharedByOthers} className="bg-neutral-800 text-white hover:bg-neutral-600 cursor-pointer">
-                        Stop Screen Share
-                    </Button>
-            }
-        </div>
+    const leaveLabel = isRecordingStarted
+        ? "Stop the recording before leaving"
+        : hasUnsavedRecording
+            ? "Wait until your recording is saved"
+            : "Leave room";
 
-        {role === "creator" && (
-            <div className="flex gap-2">
-                <div onClick={handleRecording}>
-                    {!isRecordingStarted ?
-                        <Button className="bg-neutral-800 text-white hover:bg-neutral-600 cursor-pointer">
-                            <Disc2 className="text-rose-500" />
-                            Start recording
-                        </Button > :
-                        <Button className="bg-neutral-800 text-white hover:bg-neutral-600 cursor-pointer">End recording</Button>
-                    }
-                </div>
-            </div>
-        )}
+    return (
+        <footer className="flex h-20 shrink-0 items-center justify-center gap-2 px-4 sm:gap-3">
+            <ControlButton label={isMicOn ? "Mute microphone" : "Unmute microphone"} active={!isMicOn} onClick={handleMic}>
+                {isMicOn ? <Mic /> : <MicOff />}
+            </ControlButton>
+            <ControlButton label={isvideoOn ? "Turn off camera" : "Turn on camera"} active={!isvideoOn} onClick={handleVideo}>
+                {isvideoOn ? <Video /> : <VideoOff />}
+            </ControlButton>
+            <ControlButton
+                label={isScreenSharedByOthers ? "Someone else is sharing their screen" : isScreenShareStarted ? "Stop sharing" : "Share screen"}
+                active={isScreenShareStarted}
+                disabled={isScreenSharedByOthers}
+                onClick={handleScreenSharing}
+            >
+                {isScreenShareStarted ? <ScreenShareOff /> : <ScreenShare />}
+            </ControlButton>
 
-        <Button variant="destructive" onClick={leaveRoom} disabled={isUploading} className="cursor-pointer">
-            <PhoneOff />
-            Leave Room
-        </Button>
-    </div>
+            {role === "creator" && (
+                <ControlButton
+                    label={isRecordingStarted ? "Stop recording" : "Start recording"}
+                    active={isRecordingStarted}
+                    onClick={handleRecording}
+                    className="px-4"
+                >
+                    {isRecordingStarted ? <Square className="fill-red-500 text-red-500" /> : <Circle className="fill-red-500 text-red-500" />}
+                    <span className="hidden sm:inline">{isRecordingStarted ? "Stop" : "Record"}</span>
+                </ControlButton>
+            )}
+
+            <span className="mx-1 h-8 w-px bg-white/10" aria-hidden="true" />
+
+            <ControlButton label={leaveLabel} danger disabled={hasUnsavedRecording} onClick={handleLeave} className="px-5">
+                <PhoneOff />
+                <span className="hidden sm:inline">Leave</span>
+            </ControlButton>
+        </footer>
+    );
 }

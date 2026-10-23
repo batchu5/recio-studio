@@ -1,26 +1,20 @@
+import Logo from "./Logo";
+
 export default function Footer() {
   return (
-    <footer className="w-full dark:bg-neutral-900 dark:text-neutral-300 py-6 mt-16">
-      <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
-      
-        <div className="text-lg font-bold dark:text-white">
-          Recio
-        </div>
+    <footer className="border-t border-neutral-200 px-5 py-10 dark:border-neutral-800">
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 text-sm text-neutral-500 md:flex-row dark:text-neutral-400">
+        <a href="#top" aria-label="Recio home"><Logo /></a>
 
-        <ul className="flex gap-6 text-sm">
-          <li><a href="#home" className="hover:text-white">Home</a></li>
-          <li><a href="#features" className="hover:text-white">Features</a></li>
-          <li><a href="#pricing" className="hover:text-white">Pricing</a></li>
-          <li><a href="#testimonials" className="hover:text-white">Testimonials</a></li>
+        <ul className="flex flex-wrap justify-center gap-6">
+          <li><a href="#features" className="hover:text-neutral-950 dark:hover:text-white">Features</a></li>
+          <li><a href="#how-it-works" className="hover:text-neutral-950 dark:hover:text-white">How it works</a></li>
+          <li><a href="#pricing" className="hover:text-neutral-950 dark:hover:text-white">Pricing</a></li>
+          <li><a href="#faq" className="hover:text-neutral-950 dark:hover:text-white">FAQ</a></li>
         </ul>
 
-        <div className="flex gap-4">
-          <a href="#" aria-label="Twitter" className="hover:text-white">Twitter</a>
-          <a href="#" aria-label="GitHub" className="hover:text-white">Github</a>
-          <a href="#" aria-label="LinkedIn" className="hover:text-white">LinkedIn</a>
-        </div>
+        <p>© {new Date().getFullYear()} Recio</p>
       </div>
-
     </footer>
   )
 }
