@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.local
+*.tsbuildinfo
+backend/Backend/uploads/
+backend/Backend/src/generated/
+.DS_Store
+.vscode/*
+.idea/

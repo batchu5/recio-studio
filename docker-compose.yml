@@ -1,0 +1,76 @@
+# Runs the whole Recio stack locally: frontend, API, worker, Postgres and Redis.
+#   docker compose up --build
+# Frontend: http://localhost:5173   API: http://localhost:3000
+#
+# Secrets (LiveKit, Cloudinary, Google, SMTP, JWT_SECRET) are read from
+# "backend/Backend/.env". The database and Redis URLs below override it,
+# so local runs never touch a production database.
+
+x-backend: &backend
+  build:
+    context: "./backend"
+  volumes:
+    - "./backend/Backend/.env:/Backend/.env:ro"
+  environment: &backend-env
+    DATABASE_URL: postgresql://recio:recio@postgres:5432/recio
+    REDIS_URL: redis://redis:6379
+    BACKEND_URL: http://localhost:3000
+    FRONTEND_URL: http://localhost:5173
+    RUN_WORKER_IN_API: "false"
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  api:
+    <<: *backend
+    ports:
+      - "3000:3000"
+
+  worker:
+    <<: *backend
+    command: ["npm", "run", "worker"]
+    environment:
+      <<: *backend-env
+      WORKER_CONCURRENCY: "2"
+    depends_on:
+      api:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: "./frontend"
+      args:
+        VITE_BACKEND_URL: http://localhost:3000
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: recio
+      POSTGRES_PASSWORD: recio
+      POSTGRES_DB: recio
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recio"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  postgres-data:
