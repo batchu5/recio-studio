@@ -22,7 +22,38 @@
 4. The worker lists each track's chunks in order, joins them with `ffmpeg -c copy`, and builds the combined video. Every track is placed at its real start time, so late joiners and screen shares line up ([composite.ts](backend/Backend/src/selfRecording/composite.ts)).
 5. Recordings are saved in Postgres and the host gets an email.
 
-![Architecture](backend/architecture.png)
+```mermaid
+flowchart LR
+    subgraph Browser["Browser · React"]
+        UI["Studio UI"]
+        MR["MediaRecorder<br/>5-second chunks"]
+        IDB[("IndexedDB<br/>local buffer")]
+        UW["Upload loop<br/>retries until saved"]
+        MR --> IDB --> UW
+    end
+
+    LK["LiveKit SFU<br/>live call over WebRTC"]
+
+    subgraph Server["Server · Docker"]
+        API["Express API<br/>auth, rooms, uploads"]
+        Q[("Redis<br/>BullMQ queue")]
+        W["Worker<br/>ffmpeg merge"]
+    end
+
+    CL[("Cloudinary<br/>chunks and videos")]
+    PG[("PostgreSQL<br/>users, rooms, recordings")]
+    MAIL["Email to the host"]
+
+    UI <-->|"video and audio"| LK
+    UW -->|"1 · upload chunk"| API
+    API -->|"store chunk"| CL
+    UI -->|"2 · stop, start processing"| API
+    API -->|"3 · add job"| Q
+    Q -->|"4 · pick up job"| W
+    W <-->|"5 · read chunks, save tracks"| CL
+    W -->|"6 · save recordings"| PG
+    W -->|"7 · send link"| MAIL
+```
 
 ## Tech stack
 
